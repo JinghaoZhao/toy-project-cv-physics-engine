@@ -5,7 +5,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
-UDP_IP = "192.168.0.29"
+UDP_IP = "192.168.1.197"
 UDP_PORT = 5005
 sock = socket.socket(socket.AF_INET,  # Internet
                      socket.SOCK_DGRAM)  # UDP
@@ -70,6 +70,7 @@ def angle_between(v1, v2):
     v2_u = unit_vector(v2)
     return np.degrees(np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)))
 
+c_time = time.time()
 
 with mp_hands.Hands(
         min_detection_confidence=0.5,
@@ -116,7 +117,6 @@ with mp_hands.Hands(
                 rotation_vec = np.cross(up, hand_direction)
                 rotation_angle = angle_between(up, hand_direction)
                 print("Rotation information: {}, {}, {}, {}".format(rotation_angle, *rotation_vec).encode())
-
                 udp_send("{}, {}, {}, {}".format(rotation_angle, *rotation_vec).encode())
         time.sleep(0.1)
         cv2.imshow('MediaPipe Hands', image)
