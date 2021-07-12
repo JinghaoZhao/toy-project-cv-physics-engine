@@ -5,8 +5,8 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
-UDP_IP = "192.168.0.29"
-UDP_PORT = 5005
+UDP_IP = "192.168.0.70"
+UDP_PORT = 5006
 sock = socket.socket(socket.AF_INET,  # Internet
                      socket.SOCK_DGRAM)  # UDP
 
@@ -50,7 +50,7 @@ with mp_hands.Hands(
             '/tmp/annotated_image' + str(idx) + '.png', cv2.flip(annotated_image, 1))
 
 # For webcam input:
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 
 def diff(landmark1, landmark2):
@@ -72,8 +72,8 @@ def angle_between(v1, v2):
 
 
 with mp_hands.Hands(
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5) as hands:
+        min_detection_confidence=0.7,
+        min_tracking_confidence=0.7) as hands:
     while cap.isOpened():
         success, image = cap.read()
         if not success:
@@ -95,7 +95,7 @@ with mp_hands.Hands(
 
         '''
         Normalized X gives 0 to 1 where x-origin is origin of the image x-coordinate
-        Normalized Y gives 0 to 1 where y-origin is origin of the image y-coordinate
+        Normalized Y gives 0 to 1 where y-origin is origin of the image y-coordinate===-=
         Normalized Z where z-origin is relative to the wrist z-origin. I.e if Z is positive, 
         the z-la ndmark coordinate is out of the page with respect to the wrist. Z is negative, 
         the z-landmark coordinate is into the page with respect of the wrist.
@@ -115,12 +115,34 @@ with mp_hands.Hands(
                 up = np.asarray([0, 1, 0])
                 rotation_vec = np.cross(up, hand_direction)
                 rotation_angle = angle_between(up, hand_direction)
-                print("Rotation information: {}, {}, {}, {}".format(rotation_angle, *rotation_vec).encode())
+                #
+                wrist = str(hand_landmarks.landmark[mp_hands.HandLandmark.WRIST].x) + ", " \
+                      + str(hand_landmarks.landmark[mp_hands.HandLandmark.WRIST].y) + ", " \
+                      + str(hand_landmarks.landmark[mp_hands.HandLandmark.WRIST].z)
 
-                udp_send("{}, {}, {}, {}".format(rotation_angle, *rotation_vec).encode())
+                thumbcmc = str(hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_CMC].x) + ", " \
+                         + str(hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_CMC].y) + ", " \
+                         + str(hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_CMC].z)
+
+                thumbip = str(hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_IP].x) + ", " \
+                        + str(hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_IP].y) + ", " \
+                        + str(hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_IP].z)
+
+                message = \
+                    "WRIST" + wrist + "WRIST" + \
+                    "THUMB_CMC" + thumbcmc + "THUMB_CMC" + \
+                    "THUMB_IP" + thumbip + "THUMB_IP" + \
+                    "WRIST_ROTATION" \
+                    + "{}, {}, {}, {}".format(rotation_angle, *rotation_vec) + "WRIST_ROTATION"
+
+                print(message)
         time.sleep(0.1)
         cv2.imshow('MediaPipe Hands', image)
         if cv2.waitKey(5) & 0xFF == 27:
             break
 
 cap.release()
+
+
+
+ # if 0 then receive

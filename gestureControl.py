@@ -1,5 +1,6 @@
 import cv2
 import mediapipe as mp
+import socket
 
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
@@ -36,10 +37,10 @@ with mp_hands.Hands(
             '/tmp/annotated_image' + str(idx) + '.png', cv2.flip(annotated_image, 1))
 
 # For webcam input:
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 with mp_hands.Hands(
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5) as hands:
+        min_detection_confidence=0.7,
+        min_tracking_confidence=0.7) as hands:
     while cap.isOpened():
         success, image = cap.read()
         if not success:
@@ -68,7 +69,20 @@ with mp_hands.Hands(
         '''
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
-                print(hand_landmarks)
+                # print(hand_landmarks)
+                # print(
+                #     f'Index finger tip coordinates: (',
+                #     f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x}, '
+                #     f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y}, '
+                #     f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].z})'
+                # )
+                message = str(hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x) + "," \
+                          + str(hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y) + "," \
+                          + str(hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].z)
+                byte_message = bytes(message, "utf-8")
+                print(byte_message)
+                opened_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+                opened_socket.sendto(byte_message, ("192.168.0.70", 5005))
                 mp_drawing.draw_landmarks(
                     image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
         cv2.imshow('MediaPipe Hands', image)
