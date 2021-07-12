@@ -1,0 +1,28 @@
+# Blender MTL File: 'drone.blend'
+# Material Count: 2
+
+newmtl body
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump /Users/yunqiguo/Dropbox/Render/46-drone/buster_drone/textures/body_normal.png
+map_Kd /Users/yunqiguo/Dropbox/Render/46-drone/buster_drone/textures/body_baseColor.png
+map_Ke /Users/yunqiguo/Dropbox/Render/46-drone/buster_drone/textures/body_emissive.png
+map_d /Users/yunqiguo/Dropbox/Render/46-drone/buster_drone/textures/body_baseColor.png
+
+newmtl material
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump /Users/yunqiguo/Dropbox/Render/46-drone/buster_drone/textures/material_normal.png
+map_Kd /Users/yunqiguo/Dropbox/Render/46-drone/buster_drone/textures/material_baseColor.png
