@@ -95,7 +95,7 @@ with mp_hands.Hands(
 
         '''
         Normalized X gives 0 to 1 where x-origin is origin of the image x-coordinate
-        Normalized Y gives 0 to 1 where y-origin is origin of the image y-coordinate===-=
+        Normalized Y gives 0 to 1 where y-origin is origin of the image y-coordinate
         Normalized Z where z-origin is relative to the wrist z-origin. I.e if Z is positive, 
         the z-la ndmark coordinate is out of the page with respect to the wrist. Z is negative, 
         the z-landmark coordinate is into the page with respect of the wrist.
@@ -348,7 +348,3 @@ with mp_hands.Hands(
             break
 
 cap.release()
-
-
-
- # if 0 then receive

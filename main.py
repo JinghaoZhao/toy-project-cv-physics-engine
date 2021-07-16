@@ -32,7 +32,7 @@ colors = [(219,152,52), (34, 126, 230), (182, 89, 155),
           (60, 76, 231)]
 
 # reading the video from webcam
-cap = cv2.VideoCapture(0) 
+cap = cv2.VideoCapture(1)
 with mp_hands.Hands(
     min_detection_confidence=0.7, min_tracking_confidence=0.7) as hands:
     while True:
