@@ -1,14 +1,24 @@
+import socket
+
 import cv2
 import mediapipe as mp
 
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
+
+UDP_IP = "192.168.0.70"
+UDP_PORT = 5006
+sock = socket.socket(socket.AF_INET,  # Internet
+                     socket.SOCK_DGRAM)  # UDP
+def udp_send(message):
+    sock.sendto(message, (UDP_IP, UDP_PORT))
+
 # For webcam input:
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 with mp_pose.Pose(
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5) as pose:
+        min_detection_confidence=0.8,
+        min_tracking_confidence=0.8) as pose:
     while cap.isOpened():
         success, image = cap.read()
         if not success:
@@ -30,6 +40,11 @@ with mp_pose.Pose(
         mp_drawing.draw_landmarks(
             image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
         cv2.imshow('MediaPipe Pose', image)
+        # [mp_pose.PoseLandmark.RIGHT_ELBOW].z
+        # print(results.pose_landmarks.landmark)
+        print(results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW].z)
+        # udp_send(results.pose_landmarks.landmark)
+
         if cv2.waitKey(5) & 0xFF == 27:
             break
 cap.release()
