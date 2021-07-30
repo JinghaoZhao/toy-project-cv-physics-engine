@@ -2,6 +2,7 @@
 import socket
 import cv2
 import mediapipe as mp
+import numpy as np
 
 mp_drawing = mp.solutions.drawing_utils
 mp_holistic = mp.solutions.holistic
@@ -15,11 +16,36 @@ def send_xyz(landmark):
 def udp_send(message):
     sock.sendto(message, (UDP_IP, UDP_PORT))
 
+def diff(landmark1, landmark2):
+    return [landmark1.x - landmark2.x, landmark1.y - landmark2.y, landmark1.z - landmark2.z]
+
+
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
+
+
+def angle_between(v1, v2):
+    """
+    Returns the angle in radians between vectors 'v1' and 'v2'::
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.degrees(np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)))
+
+def get_direction(landmark1, landmark2):
+    return unit_vector(np.asarray(diff(landmark1, landmark2)))
+
+def middle(l1,l2):
+    mid = l1
+    mid.x = l1.x + l2.x
+
+
 # For webcam input:
 cap = cv2.VideoCapture(0)
 with mp_holistic.Holistic(
-        min_detection_confidence=0.7,
-        min_tracking_confidence=0.7) as holistic:
+        min_detection_confidence=0.8,
+        min_tracking_confidence=0.8) as holistic:
     while cap.isOpened():
         success, image = cap.read()
         if not success:
@@ -49,25 +75,79 @@ with mp_holistic.Holistic(
             image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS)
         cv2.imshow('MediaPipe Holistic', image)
 
+        up = np.asarray([0, 1, 0])
+        LEFT_HAND = []
+        RIGHT_HAND = []
+        FACE = []
+        BODY = []
 
-        LEFT_HAND = results.left_hand_landmarks
-        RIGHT_HAND = results.right_hand_landmarks
-        FACE = results.face_landmarks
-        BODY = results.pose_landmarks
+        LEFT_HAND_MESSAGE = []
+        RIGHT_HAND_MESSAGE = []
+        FACE_MESSAGE = []
+        BODY_MESSAGE = []
 
-        # print(mp_holistic.HandLandmark)
-        if LEFT_HAND is not None:
-            LEFT_WRIST = LEFT_HAND.landmark[mp_holistic.HandLandmark.WRIST]
-            print(results.pose_landmarks.landmark[mp_holistic.PoseLandmark.RIGHT_ELBOW].z)
             # udp_send(LEFT_WRIST)
+        if results.left_hand_landmarks:
+            for landmark in results.left_hand_landmarks.landmark:
+                LEFT_HAND.append(landmark)
+            wristDirection = get_direction(LEFT_HAND[0], LEFT_HAND[9])
+            wristRotationV = np.cross(up, wristDirection)
+            wristRotationA = angle_between(up, wristDirection)
+            wristRotation = "{}, {}, {}, {}".format(wristRotationA, *wristRotationV)
+            LEFT_HAND_MESSAGE.append(wristRotation)
+            for i in range(1, 21):
+                if i in [1, 5, 9, 13, 17]:
+                    direction = get_direction(LEFT_HAND[0], LEFT_HAND[i])
+                    V = np.cross(wristDirection, direction)
+                    A = angle_between(wristDirection, direction)
+                if i in [2, 6, 10, 14, 18]:
+                    direction = get_direction(LEFT_HAND[i - 1], LEFT_HAND[i])
+                    V = np.cross(unit_vector(np.asarray(diff(LEFT_HAND[0], LEFT_HAND[i - 1]))), direction)
+                    A = angle_between(unit_vector(np.asarray(diff(LEFT_HAND[0], LEFT_HAND[i - 1]))), direction)
+                else:
+                    direction = get_direction(LEFT_HAND[i - 1], LEFT_HAND[i])
+                    V = np.cross(unit_vector(np.asarray(diff(LEFT_HAND[i - 2], LEFT_HAND[i - 1]))), direction)
+                    A = angle_between(unit_vector(np.asarray(diff(LEFT_HAND[i - 2], LEFT_HAND[i - 1]))), direction)
+                rotation = "{}, {}, {}, {}".format(A, *V)
+                LEFT_HAND_MESSAGE.append(rotation)
 
-        # if results.left_hand_landmarks.landmark != None:
-        #
-        #     LWRIST = str(round(results.left_hand_landmarks.landmark[mp_holistic.HandLandmark.WRIST].x,3)) + "," \
-        #             + str(round(results.left_hand_landmarks.landmark[mp_holistic.HandLandmark.WRIST].y, 3)) + "," \
-        #             + str(round(results.left_hand_landmarks.landmark[mp_holistic.HandLandmark.WRIST].z, 3))
-            # print(LWRIST)
+        if results.right_hand_landmarks:
+            for landmark in results.right_hand_landmarks.landmark:
+                RIGHT_HAND.append(landmark)
+            wristDirection = get_direction(RIGHT_HAND[0], RIGHT_HAND[9])
+            wristRotationV = np.cross(up, wristDirection)
+            wristRotationA = angle_between(up, wristDirection)
+            wristRotation = "{}, {}, {}, {}".format(wristRotationA, *wristRotationV)
+            RIGHT_HAND_MESSAGE.append(wristRotation)
+            for i in range(1, 21):
+                if i in [1, 5, 9, 13, 17]:
+                    direction = get_direction(RIGHT_HAND[0], RIGHT_HAND[i])
+                    V = np.cross(wristDirection, direction)
+                    A = angle_between(wristDirection, direction)
+                if i in [2, 6, 10, 14, 18]:
+                    direction = get_direction(RIGHT_HAND[i - 1], RIGHT_HAND[i])
+                    V = np.cross(unit_vector(np.asarray(diff(RIGHT_HAND[0], RIGHT_HAND[i - 1]))), direction)
+                    A = angle_between(unit_vector(np.asarray(diff(RIGHT_HAND[0], RIGHT_HAND[i - 1]))), direction)
+                else:
+                    direction = get_direction(RIGHT_HAND[i - 1], RIGHT_HAND[i])
+                    V = np.cross(unit_vector(np.asarray(diff(RIGHT_HAND[i - 2], RIGHT_HAND[i - 1]))), direction)
+                    A = angle_between(unit_vector(np.asarray(diff(RIGHT_HAND[i - 2], RIGHT_HAND[i - 1]))), direction)
+                rotation = "{}, {}, {}, {}".format(A, *V)
+                RIGHT_HAND_MESSAGE.append(rotation)
 
+        if results.face_landmarks:
+            for landmark in results.face_landmarks.landmark:
+                FACE.append(landmark)
+
+        if results.pose_landmarks:
+            for landmark in results.pose_landmarks.landmark:
+                BODY.append(landmark)
+            # Face
+
+
+
+        print(LEFT_HAND_MESSAGE)
+        print(RIGHT_HAND_MESSAGE)
 
 
 

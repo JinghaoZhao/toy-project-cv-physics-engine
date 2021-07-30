@@ -107,7 +107,6 @@ with mp_hands.Hands(
                     image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
                 # Calculate the hand direction
                 landmark = list(hand_landmarks.landmark)
-
                 hand_direction = np.asarray(diff(landmark[0], landmark[9]))
                 hand_direction = unit_vector(hand_direction)
                 up = np.asarray([0, 1, 0])
@@ -314,7 +313,7 @@ with mp_hands.Hands(
                 "pinky" + pinkyRotationMCP + "x" + pinkyRotationPIP + "x" + pinkyRotationDIP + "x" + pinkyRotationTIP + "pinky"
                 """
 
-                udp_send(message.encode())
+                # udp_send(message.encode())
                 print(message)
         time.sleep(0.1)
         cv2.imshow('MediaPipe Hands', image)
