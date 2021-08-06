@@ -90,15 +90,15 @@ with mp_holistic.Holistic(
         LEFT_HAND = []
         RIGHT_HAND = []
         FACE = []
-        BODY = []
+        POSE = []
 
         handIndex = open("HAND_INDEX.txt","r")
-        poseIndex = open("POSE_INDEX.txt","r")
+        poseIndex = open("BODY_INDEX.txt","r")
 
         LEFT_HAND_MESSAGE = ["LHM",[],handIndex]
         RIGHT_HAND_MESSAGE = ["RHM",[],handIndex]
         FACE_MESSAGE = ["FACE",[]]
-        BODY_MESSAGE = ["BODY",[],poseIndex]
+        BODY_MESSAGE = ["BODY",[]]
 
             # udp_send(LEFT_WRIST)
         if results.left_hand_landmarks:
@@ -149,33 +149,75 @@ with mp_holistic.Holistic(
                 rotation = "{},{},{},{}".format(A, *V)
                 RIGHT_HAND_MESSAGE[1].append(rotation)
 
-        if results.face_landmarks:
-            for landmark in results.face_landmarks.landmark:
-                FACE.append(landmark)
-
         if results.pose_landmarks:
             for landmark in results.pose_landmarks.landmark:
-                BODY.append(landmark)
-            # Face
-            up = np.asarray([0, 1, 0])
-            noseDirection = get_direction(BODY[0],middle(BODY[4],BODY[1]))
-            V = np.cross(up, noseDirection)
-            A = angle_between(up, noseDirection)
-            noseRotation = "{}, {}, {}, {}".format(A, *V)
-            FACE_MESSAGE.append(noseRotation)
-
-            # Center Body
-            # midChest = middle(BODY[12],BODY[11])
-            # midWaist = middle(BODY[24],BODY[23])
-            # midBody = middle[midChest,midBody]
-            # midBodyDirection = get_direction(midBody, midChest)
-            # MBRotation = get_rotation(up,midBodyDirection)
-            # # Left Shoulder
-            # direction = get_direction(midBody,BODY[12])
+                POSE.append(landmark)
+            #Head
+            Head = get_direction(middle(POSE[10],POSE[9]),POSE[0])
+            HeadR = get_rotation(up,Head)
+            # HeadTop_End
+            HeadT = get_direction(POSE[0],middle(POSE[4],POSE[1]))
+            HeadTR = get_rotation(Head,HeadT)
+            # Neck
+            Neck = get_direction(middle(POSE[10],POSE[9]),middle(POSE[12],POSE[11]))
+            NeckR = get_rotation(up,Neck)
+            for i in range(11,33):
+                msg = ""
+                # Shoulder
+                if i == 11 or i == 12:
+                    Shoulder = get_direction(POSE[i+12],POSE[i])
+                    ShoulderR = get_rotation(up,Shoulder)
+                    msg = "Shoulder:" + ShoulderR
+                # Arm
+                if i == 13 or i == 14:
+                    Elbow = get_direction(POSE[i-2],POSE[i])
+                    ElbowR = get_rotation(get_direction(POSE[i+10],POSE[i-2]), Elbow)
+                    msg = "Arm:" + ElbowR
+                # ForeArm
+                if i == 15 or i == 16:
+                    Wrist = get_direction(POSE[i - 2],POSE[i])
+                    WristR = get_rotation(get_direction(POSE[i-4],POSE[i-2]), Elbow)
+                    msg = "ForeArm:" + WristR
+                # Hand
+                if i == 19 or i == 20:
+                    Hand = get_direction(POSE[i-4],POSE[i])
+                    HandR = get_rotation(get_direction(POSE[i-6],POSE[i-4]), Hand)
+                    msg = "Hand:" + HandR
+                # Hips
+                if i == 23:
+                    Hips = get_direction(middle(POSE[23],POSE[24]),middle(POSE[11],POSE[12]))
+                    HipsR = get_rotation(up, Hips)
+                    msg = "Hips:" + HipsR
+                # Upleg
+                if i == 25 or i == 26:
+                    Knee = get_direction(POSE[i-2],POSE[i])
+                    KneeR = get_rotation(get_direction(middle(POSE[23],POSE[24]),middle(POSE[11],POSE[12])), Knee)
+                    msg = "UpLeg:" + KneeR
+                # foot
+                if i == 27 or i == 28:
+                    Ankle = get_direction(POSE[i-2],POSE[i])
+                    AnkleR = get_rotation(get_direction(POSE[i-4],POSE[i-2]), Ankle)
+                    msg = "Foot:" + AnkleR
+                # toe base
+                if i == 31 or i == 32:
+                    Toe = get_direction(POSE[i-4],POSE[i])
+                    ToeR = get_rotation(get_direction(POSE[i-6],POSE[i-4]),Toe)
+                    msg = "Toe_Base:" + ToeR
+                # toe end
+                if i == 29 or i == 30:
+                    Heel = get_direction(POSE[i-2],POSE[i])
+                    HeelR = get_rotation(get_direction(POSE[i-4],POSE[i-2]),Heel)
+                    msg = "Toe_End:" + HeelR
+                if msg != "" and i != 23:
+                    if i % 2 == 0:
+                        msg = "Left" + msg
+                    else:
+                        msg = "Right" + msg
+                BODY_MESSAGE[1].append(msg)
 
         # print(handIndex.readline().split(". ")[1].split("\n")[0])
         #"""
-        for i in [BODY_MESSAGE,LEFT_HAND_MESSAGE,RIGHT_HAND_MESSAGE,FACE_MESSAGE]:
+        for i in [LEFT_HAND_MESSAGE,RIGHT_HAND_MESSAGE,FACE_MESSAGE]:
             if i[1] != []:
                 MSG = i[0] + ")"
                 for j in i[1]:
@@ -185,6 +227,13 @@ with mp_holistic.Holistic(
                         pass
                 print(MSG)
                 udp_send(MSG.encode())
+        try:
+            MSG = "BODY)"
+            for i in BODY_MESSAGE[1]:
+                MSG += i
+            print(MSG)
+        except:
+            pass
         #"""
         # try:
         #     print(middle(results.face_landmarks.landmark[10],results.face_landmarks.landmark[9]))
