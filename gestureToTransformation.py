@@ -265,7 +265,7 @@ with mp_hands.Hands(
                 middleTIPRotationA = angle_between(middleDIPDirection, middleTIPDirection)
                 middleRotationTIP = "{}, {}, {}, {}".format(round(middleTIPRotationA,3), *middleTIPRotationV)
 
-                # ring finger
+                # rin  g finger
 
                 ringMCPDirection = unit_vector(np.asarray(diff(landmark[0], landmark[13])))
                 ringMCPRotationV = np.cross(up, ringMCPDirection)
