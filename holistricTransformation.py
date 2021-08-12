@@ -52,8 +52,8 @@ def get_rotation(prvDirection, direction):
 # For webcam input:
 cap = cv2.VideoCapture(0)
 with mp_holistic.Holistic(
-        min_detection_confidence=0.7,
-        min_tracking_confidence=0.7) as holistic:
+        min_detection_confidence=0.8,
+        min_tracking_confidence=0.8) as holistic:
     while cap.isOpened():
         success, image = cap.read()
         if not success:
@@ -149,8 +149,8 @@ with mp_holistic.Holistic(
                 rotation = "{},{},{},{}".format(A, *V)
                 RIGHT_HAND_MESSAGE[1].append(rotation)
 
-        if results.pose_landmarks:
-            for landmark in results.pose_landmarks.landmark:
+        if results.pose_world_landmarks:
+            for landmark in results.pose_world_landmarks.landmark:
                 POSE.append(landmark)
             #Head
             Head = get_direction(middle(POSE[10],POSE[9]),POSE[0])
@@ -164,14 +164,17 @@ with mp_holistic.Holistic(
             for i in range(11,33):
                 msg = ""
                 # Shoulder
-                if i == 11 or i == 12:
-                    Shoulder = get_direction(POSE[i+12],POSE[i])
-                    ShoulderR = get_rotation(up,Shoulder)
-                    msg = "Shoulder]" + ShoulderR
+                # if i == 11 or i == 12:
+                #     Shoulder = get_direction(POSE[i+12],POSE[i])
+                #     ShoulderR = get_rotation(up,Shoulder)
+                #     msg = "Shoulder]" + ShoulderR
                 # Arm
                 if i == 13 or i == 14:
                     Elbow = get_direction(POSE[i-2],POSE[i])
-                    ElbowR = get_rotation(get_direction(POSE[i+10],POSE[i-2]), Elbow)
+                    if i == 13:
+                        ElbowR = get_rotation(get_direction(POSE[i - 1], POSE[i - 2]), Elbow)
+                    else:
+                        ElbowR = get_rotation(get_direction(POSE[i - 2], POSE[i - 3]), Elbow)
                     msg = "Arm]" + ElbowR
                 # ForeArm
                 if i == 15 or i == 16:
@@ -212,10 +215,11 @@ with mp_holistic.Holistic(
                     msg = msg + " "
                     if i != 23:
                         if i % 2 == 0:
-                            msg = "Left" + msg
-                        else:
                             msg = "Right" + msg
-                BODY_MESSAGE[1].append(msg)
+                        else:
+                            msg = "Left" + msg
+                if i in [14]:
+                    BODY_MESSAGE[1].append(msg)
 
         # print(handIndex.readline().split(". ")[1].split("\n")[0])
         #"""
@@ -241,7 +245,7 @@ with mp_holistic.Holistic(
         # try:
         #     print(middle(results.face_landmarks.landmark[10],results.face_landmarks.landmark[9]))
         # except:
-        #     pass
+        #     passf
 
         if cv2.waitKey(5) & 0xFF == 27:
             break
