@@ -2,7 +2,6 @@ import numpy as np
 from numpy.linalg import inv
 from pyquaternion import Quaternion
 
-
 # pip install pyquaternion
 LEG_LENGTH = 0
 
@@ -17,7 +16,11 @@ def to_angle_axis(rotationM):
     return [q.degrees, axis[0], axis[1], axis[2]]
 
 
-def to_trans_dict(pose_landmark):
+def middle(v1, v2):
+    return (v1 + v2) / 2.
+
+
+def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
     global LEG_LENGTH
     visibility = np.asarray([l.visibility for l in pose_landmark])
     landmarkList = np.asarray([[l.x, -l.y, -l.z] for l in pose_landmark])
@@ -119,9 +122,6 @@ def to_trans_dict(pose_landmark):
         transDict["RightLeg"] = to_angle_axis(rightLegRotation)
 
         # Distance to the ground
-        # leftUpLegAngle = to_angle_axis(leftUpLegCS)[0]
-        # leftLegAngle = to_angle_axis(leftLegCS)[0]
-        # translation = np.sum(np.cos(np.radians([leftUpLegAngle, leftLegAngle]))) / -2.
         # Translation (ratio) = (hip_point - lower_point)/ (2. * up_leg_length)
         if LEG_LENGTH == 0:
             LEG_LENGTH = 2. * np.linalg.norm(landmarkList[26] - landmarkList[24])
@@ -132,6 +132,63 @@ def to_trans_dict(pose_landmark):
         transDict["HipsTrans"] = [translation, 0, 0, 0]
     else:
         transDict["Spine1"] = to_angle_axis(spineRotation)
+
+    # left hand
+    if visibility[19] > 0.5:
+        handMiddle = (landmarkList[17] + landmarkList[19]) / 2.
+        y = normalize(handMiddle - landmarkList[15])
+        z = normalize(np.cross(landmarkList[17] - landmarkList[15], landmarkList[19] - landmarkList[15]))
+        x = np.cross(y, z)
+        leftHandCS = np.asarray([x, y, z])
+        leftHandRotation = np.matmul(leftHandCS, inv(leftForeArmCS))
+        transDict["LeftHand"] = to_angle_axis(leftHandRotation)
+
+    # right hand
+    if visibility[20] > 0.5:
+        handMiddle = (landmarkList[18] + landmarkList[20]) / 2.
+        y = normalize(handMiddle - landmarkList[16])
+        z = normalize(np.cross(landmarkList[20] - landmarkList[16], landmarkList[18] - landmarkList[16]))
+        x = np.cross(y, z)
+        rightHandCS = np.asarray([x, y, z])
+        rightHandRotation = np.matmul(rightHandCS, inv(rightForeArmCS))
+        transDict["RightHand"] = to_angle_axis(rightHandRotation)
+
+    # head
+    if visibility[0] > 0.5:
+        neck = middle(landmarkList[11], landmarkList[12])
+        y = normalize(middle(landmarkList[7], landmarkList[8]) - neck)
+        z = normalize(np.cross(landmarkList[7] - neck, landmarkList[8] - neck))
+        x = np.cross(y, z)
+        headCS = np.asarray([x, y, z])
+        headRotation = np.matmul(headCS, inv(spineCS))
+        transDict["Head"] = to_angle_axis(headRotation)
+
+    # If the hand landmarks are given, we optimize the gestures with the hand landmarks
+    # Left hand
+    if left_hand_landmarks:
+        leftHandVisibility = np.asarray([l.visibility for l in left_hand_landmarks.landmark])
+        leftHandLandmarkList = np.asarray([[l.x, -l.y, -l.z] for l in left_hand_landmarks.landmark])
+        handMiddle = (leftHandLandmarkList[5] + leftHandLandmarkList[17]) / 2.
+        y = normalize(handMiddle - leftHandLandmarkList[0])
+        z = normalize(np.cross(leftHandLandmarkList[17] - leftHandLandmarkList[0],
+                               leftHandLandmarkList[5] - leftHandLandmarkList[0]))
+        x = np.cross(y, z)
+        leftHandCS = np.asarray([x, y, z])
+        leftHandRotation = np.matmul(leftHandCS, inv(leftForeArmCS))
+        transDict["LeftHand"] = to_angle_axis(leftHandRotation)
+
+    # Right hand
+    if right_hand_landmarks:
+        rightHandVisibility = np.asarray([l.visibility for l in right_hand_landmarks.landmark])
+        rightHandLandmarkList = np.asarray([[l.x, -l.y, -l.z] for l in right_hand_landmarks.landmark])
+        handMiddle = (rightHandLandmarkList[5] + rightHandLandmarkList[17]) / 2.
+        y = normalize(handMiddle - rightHandLandmarkList[0])
+        z = normalize(np.cross(rightHandLandmarkList[5] - rightHandLandmarkList[0],
+                               rightHandLandmarkList[17] - rightHandLandmarkList[0]))
+        x = np.cross(y, z)
+        rightHandCS = np.asarray([x, y, z])
+        rightHandRotation = np.matmul(rightHandCS, inv(rightForeArmCS))
+        transDict["RightHand"] = to_angle_axis(rightHandRotation)
 
     return transDict
 
