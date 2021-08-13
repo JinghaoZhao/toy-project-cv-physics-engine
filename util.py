@@ -111,6 +111,11 @@ def to_trans_dict(pose_landmark):
     transDict["RightUpLeg"] = to_angle_axis(rightUpLegRotation)
     transDict["RightLeg"] = to_angle_axis(rightLegRotation)
 
+    # Distance to the ground
+    leftUpLegAngle = to_angle_axis(leftUpLegCS)[0]
+    leftLegAngle = to_angle_axis(leftLegCS)[0]
+    translation = np.sum(np.cos(np.radians([leftUpLegAngle, leftLegAngle]))) / -2.
+    transDict["HipsTrans"] = [translation, 0, 0, 0]
     return transDict
 
 
