@@ -13,6 +13,7 @@ def to_angle_axis(rotationM):
 
 
 def to_trans_dict(pose_landmark):
+    visibility = np.asarray([l.visibility for l in pose_landmark])
     landmarkList = np.asarray([[l.x, -l.y, -l.z] for l in pose_landmark])
     transDict = {}
     # Spine CS
@@ -50,7 +51,6 @@ def to_trans_dict(pose_landmark):
     leftForeArmCS = np.asarray([x, y, z])
     leftForeArmRotation = np.matmul(leftForeArmCS, inv(leftArmCS))
 
-    transDict["Hips"] = to_angle_axis(spineRotation)
     transDict["LeftArm"] = to_angle_axis(leftArmRotation)
     transDict["LeftForeArm"] = to_angle_axis(leftForeArmRotation)
     # Right shoulder
@@ -77,45 +77,50 @@ def to_trans_dict(pose_landmark):
     transDict["RightArm"] = to_angle_axis(rightArmRotation)
     transDict["RightForeArm"] = to_angle_axis(rightForeArmRotation)
 
-    # Left up leg
-    y = normalize(landmarkList[25] - landmarkList[23])
-    x = normalize(np.cross(landmarkList[27] - landmarkList[25], y))
-    z = np.cross(x, y)
-    leftUpLegCS = np.asarray([x, y, z])
-    leftUpLegRotation = np.matmul(leftUpLegCS, inv(spineCS))
+    if visibility[25] > .5 and visibility[26] > .5:
+        # Left up leg
+        y = normalize(landmarkList[25] - landmarkList[23])
+        x = normalize(np.cross(landmarkList[27] - landmarkList[25], y))
+        z = np.cross(x, y)
+        leftUpLegCS = np.asarray([x, y, z])
+        leftUpLegRotation = np.matmul(leftUpLegCS, inv(spineCS))
 
-    # Left leg
-    y = normalize(landmarkList[27] - landmarkList[25])
-    # x does not change here
-    z = np.cross(x, y)
-    leftLegCS = np.asarray([x, y, z])
-    leftLegRotation = np.matmul(leftLegCS, inv(leftUpLegCS))
+        # Left leg
+        y = normalize(landmarkList[27] - landmarkList[25])
+        # x does not change here
+        z = np.cross(x, y)
+        leftLegCS = np.asarray([x, y, z])
+        leftLegRotation = np.matmul(leftLegCS, inv(leftUpLegCS))
 
-    transDict["LeftUpLeg"] = to_angle_axis(leftUpLegRotation)
-    transDict["LeftLeg"] = to_angle_axis(leftLegRotation)
+        transDict["LeftUpLeg"] = to_angle_axis(leftUpLegRotation)
+        transDict["LeftLeg"] = to_angle_axis(leftLegRotation)
 
-    # Right up leg
-    y = normalize(landmarkList[26] - landmarkList[24])
-    x = normalize(np.cross(landmarkList[28] - landmarkList[26], y))
-    z = np.cross(x, y)
-    rightUpLegCS = np.asarray([x, y, z])
-    rightUpLegRotation = np.matmul(rightUpLegCS, inv(spineCS))
+        # Right up leg
+        y = normalize(landmarkList[26] - landmarkList[24])
+        x = normalize(np.cross(landmarkList[28] - landmarkList[26], y))
+        z = np.cross(x, y)
+        rightUpLegCS = np.asarray([x, y, z])
+        rightUpLegRotation = np.matmul(rightUpLegCS, inv(spineCS))
 
-    # right leg
-    y = normalize(landmarkList[28] - landmarkList[26])
-    # x does not change here
-    z = np.cross(x, y)
-    rightLegCS = np.asarray([x, y, z])
-    rightLegRotation = np.matmul(rightLegCS, inv(rightUpLegCS))
+        # right leg
+        y = normalize(landmarkList[28] - landmarkList[26])
+        # x does not change here
+        z = np.cross(x, y)
+        rightLegCS = np.asarray([x, y, z])
+        rightLegRotation = np.matmul(rightLegCS, inv(rightUpLegCS))
 
-    transDict["RightUpLeg"] = to_angle_axis(rightUpLegRotation)
-    transDict["RightLeg"] = to_angle_axis(rightLegRotation)
+        transDict["RightUpLeg"] = to_angle_axis(rightUpLegRotation)
+        transDict["RightLeg"] = to_angle_axis(rightLegRotation)
 
-    # Distance to the ground
-    leftUpLegAngle = to_angle_axis(leftUpLegCS)[0]
-    leftLegAngle = to_angle_axis(leftLegCS)[0]
-    translation = np.sum(np.cos(np.radians([leftUpLegAngle, leftLegAngle]))) / -2.
-    transDict["HipsTrans"] = [translation, 0, 0, 0]
+        # Distance to the ground
+        leftUpLegAngle = to_angle_axis(leftUpLegCS)[0]
+        leftLegAngle = to_angle_axis(leftLegCS)[0]
+        translation = np.sum(np.cos(np.radians([leftUpLegAngle, leftLegAngle]))) / -2.
+        transDict["Hips"] = to_angle_axis(spineRotation)
+        transDict["HipsTrans"] = [translation, 0, 0, 0]
+    else:
+        transDict["Spine1"] = to_angle_axis(spineRotation)
+
     return transDict
 
 
