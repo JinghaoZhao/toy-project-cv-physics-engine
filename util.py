@@ -50,7 +50,7 @@ def to_trans_dict(pose_landmark):
     leftForeArmCS = np.asarray([x, y, z])
     leftForeArmRotation = np.matmul(leftForeArmCS, inv(leftArmCS))
 
-    transDict["Spine1"] = to_angle_axis(spineRotation)
+    transDict["Hips"] = to_angle_axis(spineRotation)
     transDict["LeftArm"] = to_angle_axis(leftArmRotation)
     transDict["LeftForeArm"] = to_angle_axis(leftForeArmRotation)
     # Right shoulder
@@ -76,8 +76,43 @@ def to_trans_dict(pose_landmark):
 
     transDict["RightArm"] = to_angle_axis(rightArmRotation)
     transDict["RightForeArm"] = to_angle_axis(rightForeArmRotation)
+
+    # Left up leg
+    y = normalize(landmarkList[25] - landmarkList[23])
+    x = normalize(np.cross(landmarkList[27] - landmarkList[25], y))
+    z = np.cross(x, y)
+    leftUpLegCS = np.asarray([x, y, z])
+    leftUpLegRotation = np.matmul(leftUpLegCS, inv(spineCS))
+
+    # Left leg
+    y = normalize(landmarkList[27] - landmarkList[25])
+    # x does not change here
+    z = np.cross(x, y)
+    leftLegCS = np.asarray([x, y, z])
+    leftLegRotation = np.matmul(leftLegCS, inv(leftUpLegCS))
+
+    transDict["LeftUpLeg"] = to_angle_axis(leftUpLegRotation)
+    transDict["LeftLeg"] = to_angle_axis(leftLegRotation)
+
+    # Right up leg
+    y = normalize(landmarkList[26] - landmarkList[24])
+    x = normalize(np.cross(landmarkList[28] - landmarkList[26], y))
+    z = np.cross(x, y)
+    rightUpLegCS = np.asarray([x, y, z])
+    rightUpLegRotation = np.matmul(rightUpLegCS, inv(spineCS))
+
+    # right leg
+    y = normalize(landmarkList[28] - landmarkList[26])
+    # x does not change here
+    z = np.cross(x, y)
+    rightLegCS = np.asarray([x, y, z])
+    rightLegRotation = np.matmul(rightLegCS, inv(rightUpLegCS))
+
+    transDict["RightUpLeg"] = to_angle_axis(rightUpLegRotation)
+    transDict["RightLeg"] = to_angle_axis(rightLegRotation)
+
     return transDict
 
 
 def angle_axis_to_string(angle_axis):
-    return "{:.4f},{:.4f},{:.4f},{:.4f}".format(*angle_axis)
+    return "{:.3f},{:.5f},{:.5f},{:.5f}".format(*angle_axis)
