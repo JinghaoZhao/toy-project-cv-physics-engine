@@ -1,7 +1,10 @@
 import numpy as np
 from numpy.linalg import inv
 from pyquaternion import Quaternion
+
+
 # pip install pyquaternion
+LEG_LENGTH = 0
 
 
 def normalize(v):
@@ -15,6 +18,7 @@ def to_angle_axis(rotationM):
 
 
 def to_trans_dict(pose_landmark):
+    global LEG_LENGTH
     visibility = np.asarray([l.visibility for l in pose_landmark])
     landmarkList = np.asarray([[l.x, -l.y, -l.z] for l in pose_landmark])
     transDict = {}
@@ -115,9 +119,15 @@ def to_trans_dict(pose_landmark):
         transDict["RightLeg"] = to_angle_axis(rightLegRotation)
 
         # Distance to the ground
-        leftUpLegAngle = to_angle_axis(leftUpLegCS)[0]
-        leftLegAngle = to_angle_axis(leftLegCS)[0]
-        translation = np.sum(np.cos(np.radians([leftUpLegAngle, leftLegAngle]))) / -2.
+        # leftUpLegAngle = to_angle_axis(leftUpLegCS)[0]
+        # leftLegAngle = to_angle_axis(leftLegCS)[0]
+        # translation = np.sum(np.cos(np.radians([leftUpLegAngle, leftLegAngle]))) / -2.
+        # Translation (ratio) = (hip_point - lower_point)/ (2. * up_leg_length)
+        if LEG_LENGTH == 0:
+            LEG_LENGTH = 2. * np.linalg.norm(landmarkList[26] - landmarkList[24])
+
+        translation = ((landmarkList[23] + landmarkList[24]) / 2)[1] - np.min(landmarkList[:, 1]) / LEG_LENGTH
+
         transDict["Hips"] = to_angle_axis(spineRotation)
         transDict["HipsTrans"] = [translation, 0, 0, 0]
     else:
