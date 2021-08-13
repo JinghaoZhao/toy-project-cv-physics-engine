@@ -58,8 +58,10 @@ def get_rotation(prvDirection, direction):
     return "{},{},{},{}".format(A, *V)
 
 
-# For webcam input:
-cap = cv2.VideoCapture("media/dance.mov")
+# For video input:
+# cap = cv2.VideoCapture("media/dance.mov")
+cap = cv2.VideoCapture(1)
+
 with mp_holistic.Holistic(
         min_detection_confidence=0.8,
         min_tracking_confidence=0.8) as holistic:
@@ -159,7 +161,9 @@ with mp_holistic.Holistic(
                 RIGHT_HAND_MESSAGE[1].append(rotation)
 
         if results.pose_world_landmarks:
-            trans_dict = to_trans_dict(results.pose_world_landmarks.landmark)
+            trans_dict = to_trans_dict(results.pose_world_landmarks.landmark,
+                                       results.left_hand_landmarks,
+                                       results.right_hand_landmarks,)
             for k in trans_dict.keys():
                 msg = k + "]" + angle_axis_to_string(trans_dict[k])
                 BODY_MESSAGE[1].append(msg)
