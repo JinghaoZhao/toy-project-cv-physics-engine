@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.linalg import inv
 from pyquaternion import Quaternion
+# pip install pyquaternion
 
 
 def normalize(v):
@@ -9,7 +10,8 @@ def normalize(v):
 
 def to_angle_axis(rotationM):
     q = Quaternion(matrix=rotationM.transpose())
-    return [q.degrees, q.axis[0], q.axis[1], q.axis[2]]
+    axis = q.axis
+    return [q.degrees, axis[0], axis[1], axis[2]]
 
 
 def to_trans_dict(pose_landmark):
