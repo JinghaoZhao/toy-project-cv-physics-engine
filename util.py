@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.linalg import inv
 from pyquaternion import Quaternion
-import math
 
 # pip install pyquaternion
 LEG_LENGTH = 0
@@ -261,14 +260,43 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
         y = normalize(leftHandLandmarkList[2] - leftHandLandmarkList[1])
         yP = np.matmul(y, inv(leftHandCS))
         transDict["LeftHandThumb1"] = vector_to_angle_axis(yP)
+        angle_axis = transDict["LeftHandThumb1"]
+        r = Quaternion(axis=[angle_axis[1], angle_axis[2], angle_axis[3]], degrees=angle_axis[0])
+        leftThumb1CS = np.matmul(r.rotation_matrix.transpose(), leftHandCS)
         # Thumb2
         angle = angle_between(leftHandLandmarkList[3] - leftHandLandmarkList[2],
                               leftHandLandmarkList[2] - leftHandLandmarkList[1])
-        transDict["LeftHandThumb2"] = [angle, 0.0, 0.0, -1.0]
+        y = normalize(leftHandLandmarkList[3] - leftHandLandmarkList[2])
+        yP = np.matmul(y, inv(leftThumb1CS))
+        if yP[0] < 0:
+            transDict["LeftHandThumb2"] = [angle, 0.0, 0.0, 1.0]
+        else:
+            transDict["LeftHandThumb2"] = [-angle, 0.0, 0.0, 1.0]
+        angle_axis = transDict["LeftHandThumb2"]
+        r = Quaternion(axis=[angle_axis[1], angle_axis[2], angle_axis[3]], degrees=angle_axis[0])
+        leftThumb2CS = np.matmul(r.rotation_matrix.transpose(), leftThumb1CS)
         # Thumb3
         angle = angle_between(leftHandLandmarkList[4] - leftHandLandmarkList[3],
                               leftHandLandmarkList[3] - leftHandLandmarkList[2])
-        transDict["LeftHandThumb3"] = [angle, 0.0, 0.0, -1.0]
+        y = normalize(leftHandLandmarkList[4] - leftHandLandmarkList[3])
+        yP = np.matmul(y, inv(leftThumb2CS))
+        if yP[0] < 0:
+            transDict["LeftHandThumb3"] = [angle, 0.0, 0.0, 1.0]
+        else:
+            transDict["LeftHandThumb3"] = [-angle, 0.0, 0.0, 1.0]
+
+        # # Thumb1
+        # y = normalize(leftHandLandmarkList[2] - leftHandLandmarkList[1])
+        # yP = np.matmul(y, inv(leftHandCS))
+        # transDict["LeftHandThumb1"] = vector_to_angle_axis(yP)
+        # # Thumb2
+        # angle = angle_between(leftHandLandmarkList[3] - leftHandLandmarkList[2],
+        #                       leftHandLandmarkList[2] - leftHandLandmarkList[1])
+        # transDict["LeftHandThumb2"] = [angle, 0.0, 0.0, -1.0]
+        # # Thumb3
+        # angle = angle_between(leftHandLandmarkList[4] - leftHandLandmarkList[3],
+        #                       leftHandLandmarkList[3] - leftHandLandmarkList[2])
+        # transDict["LeftHandThumb3"] = [angle, 0.0, 0.0, -1.0]
 
     # Right hand
     if right_hand_landmarks:
@@ -340,14 +368,30 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
         y = normalize(rightHandLandmarkList[2] - rightHandLandmarkList[1])
         yP = np.matmul(y, inv(rightHandCS))
         transDict["RightHandThumb1"] = vector_to_angle_axis(yP)
+        angle_axis = transDict["RightHandThumb1"]
+        r = Quaternion(axis=[angle_axis[1], angle_axis[2], angle_axis[3]], degrees=angle_axis[0])
+        rightThumb1CS = np.matmul(r.rotation_matrix.transpose(), rightHandCS)
         # Thumb2
         angle = angle_between(rightHandLandmarkList[3] - rightHandLandmarkList[2],
                               rightHandLandmarkList[2] - rightHandLandmarkList[1])
-        transDict["RightHandThumb2"] = [angle, 0.0, 0.0, 1.0]
+        y = normalize(rightHandLandmarkList[3] - rightHandLandmarkList[2])
+        yP = np.matmul(y, inv(rightThumb1CS))
+        if yP[0] < 0:
+            transDict["RightHandThumb2"] = [angle, 0.0, 0.0, 1.0]
+        else:
+            transDict["RightHandThumb2"] = [-angle, 0.0, 0.0, 1.0]
+        angle_axis = transDict["RightHandThumb2"]
+        r = Quaternion(axis=[angle_axis[1], angle_axis[2], angle_axis[3]], degrees=angle_axis[0])
+        rightThumb2CS = np.matmul(r.rotation_matrix.transpose(), rightThumb1CS)
         # Thumb3
         angle = angle_between(rightHandLandmarkList[4] - rightHandLandmarkList[3],
                               rightHandLandmarkList[3] - rightHandLandmarkList[2])
-        transDict["RightHandThumb3"] = [angle, 0.0, 0.0, 1.0]
+        y = normalize(rightHandLandmarkList[4] - rightHandLandmarkList[3])
+        yP = np.matmul(y, inv(rightThumb2CS))
+        if yP[0] < 0:
+            transDict["RightHandThumb3"] = [angle, 0.0, 0.0, 1.0]
+        else:
+            transDict["RightHandThumb3"] = [-angle, 0.0, 0.0, 1.0]
     return transDict
 
 
