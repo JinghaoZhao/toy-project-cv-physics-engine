@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.linalg import inv
 from pyquaternion import Quaternion
+import math
 
 # pip install pyquaternion
 LEG_LENGTH = 0
@@ -32,6 +33,18 @@ def to_angle_axis(rotationM):
 
 def middle(v1, v2):
     return (v1 + v2) / 2.
+
+
+def vector_to_angle_axis(v):
+    """
+    Calculate the rotation according to the x and z axis transform y to v
+    :param v: target vector
+    :return: angle, axis
+    """
+    y = np.asarray([0., 1., 0.])
+    angle = angle_between(v, y)
+    axis = np.cross(y, v)
+    return [angle, axis[0], axis[1], axis[2]]
 
 
 def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
@@ -194,11 +207,8 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
         # Left hand fingers
         # Index1
         y = normalize(leftHandLandmarkList[6] - leftHandLandmarkList[5])
-        x = normalize(np.cross(y, leftHandLandmarkList[7] - leftHandLandmarkList[6]))
-        z = np.cross(x, y)
-        leftHandIndex1CS = np.asarray([x, y, z])
-        leftHandIndex1Rotation = np.matmul(leftHandIndex1CS, inv(leftHandCS))
-        transDict["LeftHandIndex1"] = to_angle_axis(leftHandIndex1Rotation)
+        yP = np.matmul(y, inv(leftHandCS))
+        transDict["LeftHandIndex1"] = vector_to_angle_axis(yP)
         # Index2. Since the knuckles only rotate according to the x axis, we use the angle between function.
         angle = angle_between(leftHandLandmarkList[7] - leftHandLandmarkList[6],
                               leftHandLandmarkList[6] - leftHandLandmarkList[5])
@@ -210,11 +220,8 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
 
         # Middle1
         y = normalize(leftHandLandmarkList[10] - leftHandLandmarkList[9])
-        x = normalize(np.cross(y, leftHandLandmarkList[11] - leftHandLandmarkList[10]))
-        z = np.cross(x, y)
-        leftHandMiddle1CS = np.asarray([x, y, z])
-        leftHandMiddle1Rotation = np.matmul(leftHandMiddle1CS, inv(leftHandCS))
-        transDict["LeftHandMiddle1"] = to_angle_axis(leftHandMiddle1Rotation)
+        yP = np.matmul(y, inv(leftHandCS))
+        transDict["LeftHandMiddle1"] = vector_to_angle_axis(yP)
         # Middle2
         angle = angle_between(leftHandLandmarkList[11] - leftHandLandmarkList[10],
                               leftHandLandmarkList[10] - leftHandLandmarkList[9])
@@ -226,11 +233,8 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
 
         # Ring1
         y = normalize(leftHandLandmarkList[14] - leftHandLandmarkList[13])
-        x = normalize(np.cross(y, leftHandLandmarkList[15] - leftHandLandmarkList[14]))
-        z = np.cross(x, y)
-        leftHandRing1CS = np.asarray([x, y, z])
-        leftHandRing1Rotation = np.matmul(leftHandRing1CS, inv(leftHandCS))
-        transDict["LeftHandRing1"] = to_angle_axis(leftHandRing1Rotation)
+        yP = np.matmul(y, inv(leftHandCS))
+        transDict["LeftHandRing1"] = vector_to_angle_axis(yP)
         # Ring2
         angle = angle_between(leftHandLandmarkList[15] - leftHandLandmarkList[14],
                               leftHandLandmarkList[14] - leftHandLandmarkList[13])
@@ -242,11 +246,8 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
 
         # Pinky1
         y = normalize(leftHandLandmarkList[18] - leftHandLandmarkList[17])
-        x = normalize(np.cross(y, leftHandLandmarkList[19] - leftHandLandmarkList[18]))
-        z = np.cross(x, y)
-        leftHandPinky1CS = np.asarray([x, y, z])
-        leftHandPinky1Rotation = np.matmul(leftHandPinky1CS, inv(leftHandCS))
-        transDict["LeftHandPinky1"] = to_angle_axis(leftHandPinky1Rotation)
+        yP = np.matmul(y, inv(leftHandCS))
+        transDict["LeftHandPinky1"] = vector_to_angle_axis(yP)
         # Pinky2
         angle = angle_between(leftHandLandmarkList[19] - leftHandLandmarkList[18],
                               leftHandLandmarkList[18] - leftHandLandmarkList[17])
@@ -258,11 +259,8 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
 
         # Thumb1
         y = normalize(leftHandLandmarkList[2] - leftHandLandmarkList[1])
-        z = normalize(np.cross(leftHandLandmarkList[3] - leftHandLandmarkList[2], y))
-        x = np.cross(y, z)
-        leftHandThumb1CS = np.asarray([x, y, z])
-        leftHandThumb1Rotation = np.matmul(leftHandThumb1CS, inv(leftHandCS))
-        transDict["LeftHandThumb1"] = to_angle_axis(leftHandThumb1Rotation)
+        yP = np.matmul(y, inv(leftHandCS))
+        transDict["LeftHandThumb1"] = vector_to_angle_axis(yP)
         # Thumb2
         angle = angle_between(leftHandLandmarkList[3] - leftHandLandmarkList[2],
                               leftHandLandmarkList[2] - leftHandLandmarkList[1])
@@ -288,11 +286,8 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
         # Right hand fingers
         # Index1
         y = normalize(rightHandLandmarkList[6] - rightHandLandmarkList[5])
-        x = normalize(np.cross(y, rightHandLandmarkList[7] - rightHandLandmarkList[6]))
-        z = np.cross(x, y)
-        rightHandIndex1CS = np.asarray([x, y, z])
-        rightHandIndex1Rotation = np.matmul(rightHandIndex1CS, inv(rightHandCS))
-        transDict["RightHandIndex1"] = to_angle_axis(rightHandIndex1Rotation)
+        yP = np.matmul(y, inv(rightHandCS))
+        transDict["RightHandIndex1"] = vector_to_angle_axis(yP)
         # Index2. Since the knuckles only rotate according to the x axis, we use the angle between function.
         angle = angle_between(rightHandLandmarkList[7] - rightHandLandmarkList[6],
                               rightHandLandmarkList[6] - rightHandLandmarkList[5])
@@ -304,11 +299,8 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
 
         # Middle1
         y = normalize(rightHandLandmarkList[10] - rightHandLandmarkList[9])
-        x = normalize(np.cross(y, rightHandLandmarkList[11] - rightHandLandmarkList[10]))
-        z = np.cross(x, y)
-        rightHandMiddle1CS = np.asarray([x, y, z])
-        rightHandMiddle1Rotation = np.matmul(rightHandMiddle1CS, inv(rightHandCS))
-        transDict["RightHandMiddle1"] = to_angle_axis(rightHandMiddle1Rotation)
+        yP = np.matmul(y, inv(rightHandCS))
+        transDict["RightHandMiddle1"] = vector_to_angle_axis(yP)
         # Middle2
         angle = angle_between(rightHandLandmarkList[11] - rightHandLandmarkList[10],
                               rightHandLandmarkList[10] - rightHandLandmarkList[9])
@@ -320,11 +312,8 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
 
         # Ring1
         y = normalize(rightHandLandmarkList[14] - rightHandLandmarkList[13])
-        x = normalize(np.cross(y, rightHandLandmarkList[15] - rightHandLandmarkList[14]))
-        z = np.cross(x, y)
-        rightHandRing1CS = np.asarray([x, y, z])
-        rightHandRing1Rotation = np.matmul(rightHandRing1CS, inv(rightHandCS))
-        transDict["RightHandRing1"] = to_angle_axis(rightHandRing1Rotation)
+        yP = np.matmul(y, inv(rightHandCS))
+        transDict["RightHandRing1"] = vector_to_angle_axis(yP)
         # Ring2
         angle = angle_between(rightHandLandmarkList[15] - rightHandLandmarkList[14],
                               rightHandLandmarkList[14] - rightHandLandmarkList[13])
@@ -336,11 +325,8 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
 
         # Pinky1
         y = normalize(rightHandLandmarkList[18] - rightHandLandmarkList[17])
-        x = normalize(np.cross(y, rightHandLandmarkList[19] - rightHandLandmarkList[18]))
-        z = np.cross(x, y)
-        rightHandPinky1CS = np.asarray([x, y, z])
-        rightHandPinky1Rotation = np.matmul(rightHandPinky1CS, inv(rightHandCS))
-        transDict["RightHandPinky1"] = to_angle_axis(rightHandPinky1Rotation)
+        yP = np.matmul(y, inv(rightHandCS))
+        transDict["RightHandPinky1"] = vector_to_angle_axis(yP)
         # Pinky2
         angle = angle_between(rightHandLandmarkList[19] - rightHandLandmarkList[18],
                               rightHandLandmarkList[18] - rightHandLandmarkList[17])
@@ -352,11 +338,8 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
 
         # Thumb1
         y = normalize(rightHandLandmarkList[2] - rightHandLandmarkList[1])
-        z = normalize(np.cross(y, rightHandLandmarkList[3] - rightHandLandmarkList[2]))
-        x = np.cross(y, z)
-        rightHandThumb1CS = np.asarray([x, y, z])
-        rightHandThumb1Rotation = np.matmul(rightHandThumb1CS, inv(rightHandCS))
-        transDict["RightHandThumb1"] = to_angle_axis(rightHandThumb1Rotation)
+        yP = np.matmul(y, inv(rightHandCS))
+        transDict["RightHandThumb1"] = vector_to_angle_axis(yP)
         # Thumb2
         angle = angle_between(rightHandLandmarkList[3] - rightHandLandmarkList[2],
                               rightHandLandmarkList[2] - rightHandLandmarkList[1])
