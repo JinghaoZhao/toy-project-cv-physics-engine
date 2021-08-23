@@ -163,15 +163,16 @@ with mp_holistic.Holistic(
                 rotation = "{},{},{},{}".format(A, *V)
                 RIGHT_HAND_MESSAGE[1].append(rotation)
 
-        if results.pose_world_landmarks:
+        if results.pose_landmarks:
+            # Mediapipe-rpi4 does not support pose_world_landmarks yet. It may get updated later.
             # This steps takes 6.3ms to process
-            trans_dict = to_trans_dict(results.pose_world_landmarks.landmark,
+            trans_dict = to_trans_dict(results.pose_landmarks.landmark,
                                        results.left_hand_landmarks,
                                        results.right_hand_landmarks,)
             for k in trans_dict.keys():
                 msg = k + "]" + angle_axis_to_string(trans_dict[k])
                 BODY_MESSAGE[1].append(msg)
-            # for landmark in results.pose_world_landmarks.landmark:
+            # for landmark in results.pose_landmarks.landmark:
             #     POSE.append(landmark)
             # # Head
             # Head = get_direction(middle(POSE[10], POSE[9]), POSE[0])
