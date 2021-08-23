@@ -4,6 +4,8 @@ import socket
 import cv2
 import mediapipe as mp
 import numpy as np
+import time
+
 from util import to_trans_dict, angle_axis_to_string
 
 mp_drawing = mp.solutions.drawing_utils
@@ -66,6 +68,7 @@ with mp_holistic.Holistic(
         min_detection_confidence=0.8,
         min_tracking_confidence=0.8) as holistic:
     while cap.isOpened():
+        print(time.time())
         success, image = cap.read()
         if not success:
             print("Ignoring empty camera frame.")
@@ -161,6 +164,7 @@ with mp_holistic.Holistic(
                 RIGHT_HAND_MESSAGE[1].append(rotation)
 
         if results.pose_world_landmarks:
+            # This steps takes 6.3ms to process
             trans_dict = to_trans_dict(results.pose_world_landmarks.landmark,
                                        results.left_hand_landmarks,
                                        results.right_hand_landmarks,)
