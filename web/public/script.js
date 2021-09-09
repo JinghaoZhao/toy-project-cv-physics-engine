@@ -9,7 +9,7 @@ import {GLTFLoader} from 'https://threejsfundamentals.org/threejs/resources/thre
 function main() {
     var socket = io();
 
-    socket.on("multicast", function(msg) {
+    socket.on("multicast", function (msg) {
         let message = JSON.parse(msg);
         if (startTime < 0) {
             startTime = message.shift().time;
@@ -34,7 +34,7 @@ function main() {
                             startTime = Math.ceil(Date.now() - Number(innerEle) * 1000);
                         }
                         */
-                    } catch(error) {
+                    } catch (error) {
                         console.log(element);
                     }
                 }
@@ -62,14 +62,14 @@ function main() {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#DEFEFF');
 
-    const list = ['Drone_Controller','Turbine_Controller','Turbine_R','Turbine_L',
-    'U_MassPoint','Eye_Controller','Eye_Pupil','D_MassPoint','Drone_Body',
-    'Drone_Gen_R','Drone_Panel_R','Drone_leg_R','R_P1_G','R_P2','R_P3_G','R_P4',
-    'R_P5_M','R_P6_G','R_P7','Drone_Gen_L','Drone_Panel_L','Drone_leg_L','L_P1_G',
-    'L_P2','L_P3_G','L_P4','L_P5_M','L_P6_G','L_P7','Drone_UPanel_R','Drone_UPanel_L',
-    'Drone_UPart','Drone_Turb_M_L','Drone_Turb_Blade_L','Drone_Turb_M_R',
-    'Drone_Turb_Blade_R','Drone_leg_F','F_P1_G','F_P2','F_P3_G','F_P4','F_P5_M',
-    'F_P6_G','F_P7','Drone_ILens','Drone_IEye'];
+    const list = ['Drone_Controller', 'Turbine_Controller', 'Turbine_R', 'Turbine_L',
+        'U_MassPoint', 'Eye_Controller', 'Eye_Pupil', 'D_MassPoint', 'Drone_Body',
+        'Drone_Gen_R', 'Drone_Panel_R', 'Drone_leg_R', 'R_P1_G', 'R_P2', 'R_P3_G', 'R_P4',
+        'R_P5_M', 'R_P6_G', 'R_P7', 'Drone_Gen_L', 'Drone_Panel_L', 'Drone_leg_L', 'L_P1_G',
+        'L_P2', 'L_P3_G', 'L_P4', 'L_P5_M', 'L_P6_G', 'L_P7', 'Drone_UPanel_R', 'Drone_UPanel_L',
+        'Drone_UPart', 'Drone_Turb_M_L', 'Drone_Turb_Blade_L', 'Drone_Turb_M_R',
+        'Drone_Turb_Blade_R', 'Drone_leg_F', 'F_P1_G', 'F_P2', 'F_P3_G', 'F_P4', 'F_P5_M',
+        'F_P6_G', 'F_P7', 'Drone_ILens', 'Drone_IEye'];
 
     var all3d = {};
     // 传入的数据放进data3D里面去，格式稍微修改即可
@@ -307,7 +307,6 @@ function main() {
     };
 
 
-
     {
         const skyColor = 0xB1E1FF;  // light blue
         const groundColor = 0xB97A20;  // brownish orange
@@ -418,7 +417,7 @@ function main() {
         const len = partChildren.length;
         for (let i = 0; i < len; ++i) {
             if (partChildren[i].type === "Object3D")
-            all3d[partChildren[i].name] = partChildren[i];
+                all3d[partChildren[i].name] = partChildren[i];
         }
         partChildren.forEach((child, i) => {
             addPart(child);
@@ -471,7 +470,7 @@ function main() {
                     var argPosition = data3D[arg].position.shift();
                     argPosition = data3D[arg].position.shift();
                     all3d[arg].position.set(...argPosition);
-                }    
+                }
                 if (data3D[arg].quaternion && Number(data3D[arg].quaternion[0]) < time) {
                     var argQuaternion = data3D[arg].quaternion.shift();
                     argQuaternion = data3D[arg].quaternion.shift();
@@ -482,7 +481,7 @@ function main() {
                     argScale = data3D[arg].scale.shift();
                     all3d[arg].scale.set(...argScale);
                 }
-            } catch(error) {
+            } catch (error) {
                 console.log(error);
                 console.log('-----', arg);
             }
@@ -491,6 +490,7 @@ function main() {
         renderer.render(scene, camera);
         requestAnimationFrame(render);
     }
+
     requestAnimationFrame(render);
 
 }
