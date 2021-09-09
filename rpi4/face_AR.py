@@ -16,6 +16,9 @@ serverAddressPort = ("192.168.0.16", 20022)
 UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 bufferSize = 4096
 
+# set timeout 4 second
+UDPClientSocket.settimeout(5)
+
 # use this xml file
 # https://github.com/opencv/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xml
 cascade = "haarcascade_frontalface_default.xml"
@@ -60,8 +63,13 @@ while True:
         bytesToSend = pickle.dumps([encodings, frame_num])
         # print("Send message length {}".format(len(bytesToSend)))
         UDPClientSocket.sendto(bytesToSend, serverAddressPort)
-        msgFromServer = UDPClientSocket.recvfrom(bufferSize)
-        names = pickle.loads(msgFromServer[0])
+        try:
+            msgFromServer = UDPClientSocket.recvfrom(bufferSize)
+            names = pickle.loads(msgFromServer[0])
+        except socket.timeout:
+            print("Timeout...")
+            names = []
+            continue
         print("Detect faces {}".format(names))
 
         # loop over the recognized faces
