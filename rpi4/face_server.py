@@ -26,16 +26,16 @@ data = pickle.loads(open(encodingsP, "rb").read())
 while True:
     bytesAddressPair = UDPServerSocket.recvfrom(bufferSize)
 
-    encodings = pickle.loads(bytesAddressPair[0])
+    encodings, frame_num = pickle.loads(bytesAddressPair[0])
     address = bytesAddressPair[1]
-    clientIP = "Client IP Address:{}".format(address)
+    clientIP = "Client {}".format(address)
     names = []
     for encoding in encodings:
         # attempt to match each face in the input image to our known
         # encodings
         matches = face_recognition.compare_faces(data["encodings"],
                                                  encoding)
-        name = "Unknown"  # if face is not recognized, then print Unknown
+        name = "unknown"  # if face is not recognized, then print Unknown
 
         # check to see if we have found a match
         if True in matches:
@@ -63,5 +63,5 @@ while True:
 
         # Update the list of names
         names.append(name)
-    print("Detected faces {}".format(names))
+    print("Frame: {}, Detected faces {} on {}".format(frame_num, names, clientIP))
     UDPServerSocket.sendto(pickle.dumps(names), address)
