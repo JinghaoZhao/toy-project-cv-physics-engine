@@ -55,22 +55,22 @@ while True:
     # send the faces to the server to recognize
     # compute the facial embeddings for each face bounding box
     encodings = face_recognition.face_encodings(rgb, boxes)
+    if len(encodings) > 0:
+        bytesToSend = pickle.dumps(encodings)
+        # print("Send message length {}".format(len(bytesToSend)))
+        UDPClientSocket.sendto(bytesToSend, serverAddressPort)
+        msgFromServer = UDPClientSocket.recvfrom(bufferSize)
+        names = pickle.loads(msgFromServer[0])
+        print("Detect faces {}".format(names))
 
-    bytesToSend = pickle.dumps(encodings)
-    # print("Send message length {}".format(len(bytesToSend)))
-    UDPClientSocket.sendto(bytesToSend, serverAddressPort)
-    msgFromServer = UDPClientSocket.recvfrom(bufferSize)
-    names = pickle.loads(msgFromServer[0])
-    print("Detect faces {}".format(names))
-
-    # loop over the recognized faces
-    for ((top, right, bottom, left), name) in zip(boxes, names):
-        # draw the predicted face name on the image - color is in BGR
-        cv2.rectangle(frame, (left, top), (right, bottom),
-                      (0, 255, 0), 2)
-        y = top - 15 if top - 15 > 15 else top + 15
-        cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX,
-                    .8, (255, 0, 0), 2)
+        # loop over the recognized faces
+        for ((top, right, bottom, left), name) in zip(boxes, names):
+            # draw the predicted face name on the image - color is in BGR
+            cv2.rectangle(frame, (left, top), (right, bottom),
+                          (0, 255, 0), 2)
+            y = top - 15 if top - 15 > 15 else top + 15
+            cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX,
+                        .8, (255, 0, 0), 2)
 
     # display the image to our screen
     cv2.imshow("Facial Recognition is Running", frame)
