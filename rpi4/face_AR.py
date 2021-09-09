@@ -46,9 +46,9 @@ while True:
             print("Send message length {}".format(len(bytesToSend)))
             UDPClientSocket.sendto(bytesToSend, serverAddressPort)
             msgFromServer = UDPClientSocket.recvfrom(bufferSize)
-            name = "{}".format(msgFromServer[0])
-            print("Detect face " + name)
-            face_names.append(name)
+            name = msgFromServer[0]
+            print("Detect face " + name.decode())
+            face_names.append(name.decode())
 
     process_this_frame = not process_this_frame
     # Display the results
