@@ -6,7 +6,7 @@ import face_recognition
 import numpy as np
 
 localIP = "192.168.0.16"
-localPort = 20001
+localPort = 20022
 bufferSize = 2048
 msgFromServer = "Test"
 bytesToSend = str.encode(msgFromServer)

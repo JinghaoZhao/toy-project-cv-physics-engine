@@ -8,7 +8,7 @@ msgFromClient = "Test"
 bytesToSend = str.encode(msgFromClient)
 
 # Change this port to the server's port
-serverAddressPort = ("192.168.0.16", 20001)
+serverAddressPort = ("192.168.0.16", 20022)
 # Create a UDP socket at client side
 UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 bufferSize = 2048
