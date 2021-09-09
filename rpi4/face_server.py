@@ -5,7 +5,7 @@ import cv2
 import face_recognition
 import numpy as np
 
-localIP = "127.0.0.1"
+localIP = "192.168.0.16"
 localPort = 20001
 bufferSize = 2048
 msgFromServer = "Test"
@@ -43,11 +43,7 @@ while True:
 
     face_encoding = pickle.loads(bytesAddressPair[0])
     address = bytesAddressPair[1]
-    clientMsg = "Message from Client:{}".format(face_encoding)
     clientIP = "Client IP Address:{}".format(address)
-
-    print(clientMsg)
-    print(clientIP)
     # See if the face is a match for the known face(s)
     matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
     name = "Unknown"
@@ -62,6 +58,6 @@ while True:
     best_match_index = np.argmin(face_distances)
     if matches[best_match_index]:
         name = known_face_names[best_match_index]
-
+    print("Detect face {} for client IP {}".format(name, clientIP))
     # Sending a reply to client
     UDPServerSocket.sendto(str.encode(name), address)
