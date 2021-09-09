@@ -58,6 +58,6 @@ while True:
     best_match_index = np.argmin(face_distances)
     if matches[best_match_index]:
         name = known_face_names[best_match_index]
-    print("Detect face {} for client IP {}".format(name, clientIP))
+    print("Detect face {} for ".format(name, clientIP))
     # Sending a reply to client
     UDPServerSocket.sendto(str.encode(name), address)

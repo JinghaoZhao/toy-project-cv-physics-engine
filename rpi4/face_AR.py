@@ -43,7 +43,7 @@ while True:
         face_names = []
         for f in face_encodings:
             bytesToSend = pickle.dumps(f)
-            print("Send message length {}".format(len(bytesToSend)))
+            # print("Send message length {}".format(len(bytesToSend)))
             UDPClientSocket.sendto(bytesToSend, serverAddressPort)
             msgFromServer = UDPClientSocket.recvfrom(bufferSize)
             name = msgFromServer[0]
