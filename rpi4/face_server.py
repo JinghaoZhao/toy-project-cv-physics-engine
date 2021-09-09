@@ -1,63 +1,67 @@
 import pickle
 import socket
 
-import cv2
 import face_recognition
-import numpy as np
 
 localIP = "192.168.0.16"
 localPort = 20022
-bufferSize = 2048
+bufferSize = 4096
 msgFromServer = "Test"
 bytesToSend = str.encode(msgFromServer)
 # Create a datagram socket
 UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 # Bind to address and ip
 UDPServerSocket.bind((localIP, localPort))
+
+# Initialize 'currentname' to trigger only when a new person is identified.
+currentname = "unknown"
+# Determine faces from encodings.pickle file model created from train_model.py
+encodingsP = "encodings.pickle"
 print("UDP server up and listening")
-# Load a sample picture and learn how to recognize it.
-obama_image = face_recognition.load_image_file("./assets/obama.png")
-obama_face_encoding = face_recognition.face_encodings(obama_image)[0]
-# Load a second sample picture and learn how to recognize it.
-biden_image = face_recognition.load_image_file("assets/biden.png")
-biden_face_encoding = face_recognition.face_encodings(biden_image)[0]
-yunqi_image = face_recognition.load_image_file("assets/yunqi.jpg")
-yunqi_face_encoding = face_recognition.face_encodings(yunqi_image)[0]
-
-# Create arrays of known face encodings and their names
-known_face_encodings = [
-    obama_face_encoding,
-    biden_face_encoding,
-    yunqi_face_encoding
-]
-
-known_face_names = [
-    "Barack Obama",
-    "Joe Biden",
-    "Yunqi Guo"
-]
-
+# load the known faces and embeddings along with OpenCV's Haar
+# cascade for face detection
+print("[INFO] loading encodings + face detector...")
+data = pickle.loads(open(encodingsP, "rb").read())
 
 while True:
     bytesAddressPair = UDPServerSocket.recvfrom(bufferSize)
 
-    face_encoding = pickle.loads(bytesAddressPair[0])
+    encodings = pickle.loads(bytesAddressPair[0])
     address = bytesAddressPair[1]
     clientIP = "Client IP Address:{}".format(address)
-    # See if the face is a match for the known face(s)
-    matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-    name = "Unknown"
+    names = []
+    for encoding in encodings:
+        # attempt to match each face in the input image to our known
+        # encodings
+        matches = face_recognition.compare_faces(data["encodings"],
+                                                 encoding)
+        name = "Unknown"  # if face is not recognized, then print Unknown
 
-    # # If a match was found in known_face_encodings, just use the first one.
-    # if True in matches:
-    #     first_match_index = matches.index(True)
-    #     name = known_face_names[first_match_index]
+        # check to see if we have found a match
+        if True in matches:
+            # find the indexes of all matched faces then initialize a
+            # dictionary to count the total number of times each face
+            # was matched
+            matchedIdxs = [i for (i, b) in enumerate(matches) if b]
+            counts = {}
 
-    # Or instead, use the known face with the smallest distance to the new face
-    face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-    best_match_index = np.argmin(face_distances)
-    if matches[best_match_index]:
-        name = known_face_names[best_match_index]
-    print("Detect face {} for ".format(name, clientIP))
-    # Sending a reply to client
-    UDPServerSocket.sendto(str.encode(name), address)
+            # loop over the matched indexes and maintain a count for
+            # each recognized face face
+            for i in matchedIdxs:
+                name = data["names"][i]
+                counts[name] = counts.get(name, 0) + 1
+
+            # determine the recognized face with the largest number
+            # of votes (note: in the event of an unlikely tie Python
+            # will select first entry in the dictionary)
+            name = max(counts, key=counts.get)
+
+            # If someone in your dataset is identified, print their name on the screen
+            if currentname != name:
+                currentname = name
+                print(currentname)
+
+        # Update the list of names
+        names.append(name)
+    print("Detected faces {}".format(names))
+    UDPServerSocket.sendto(pickle.dumps(names), address)
