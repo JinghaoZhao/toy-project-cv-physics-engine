@@ -59,7 +59,7 @@ while True:
             # If someone in your dataset is identified, print their name on the screen
             if currentname != name:
                 currentname = name
-                print(currentname)
+                # print(currentname)
 
         # Update the list of names
         names.append(name)
