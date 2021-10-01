@@ -25,6 +25,11 @@ def angle_between(v1, v2):
 
 
 def to_angle_axis(rotation_m):
+    """
+    Transform the rotation matrix to degrees and axis
+    :param rotation_m: rotation matrix
+    :return: [angle, x, y, z]
+    """
     q = Quaternion(matrix=rotation_m.transpose())
     axis = q.axis
     return [q.degrees, axis[0], axis[1], axis[2]]
@@ -38,12 +43,17 @@ def vector_to_angle_axis(v):
     """
     Calculate the rotation according to the x and z axis transform y to v
     :param v: target vector
-    :return: angle, axis
+    :return: [angle, x, y, z]
     """
     y = np.asarray([0., 1., 0.])
     angle = angle_between(v, y)
     axis = np.cross(y, v)
     return [angle, axis[0], axis[1], axis[2]]
+
+
+def angle_axis_to_matrix(vec4):
+    rotation = Quaternion(axis=[vec4[1], vec4[2], vec4[3]], degrees=vec4[0])
+    return rotation.rotation_matrix
 
 
 def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
@@ -78,23 +88,23 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
                                          [0, -1, 0]])
     left_shoulder_cs = np.matmul(left_shoulder_rotation, spine_cs)
 
-    # Left arm
+    # Left arm has 2 DoF, rotation according to x and z. It cannot rotate according to Y
+
     # leftArmCS = leftArmRotation * leftShouldCS
+    # y in the shoulder CS
     y = normalize(landmark_list[13] - landmark_list[11])
-    z = normalize(np.cross(y, landmark_list[15] - landmark_list[13]))
-    x = np.cross(y, z)
-    left_arm_cs = np.asarray([x, y, z])
-    left_arm_rotation = np.matmul(left_arm_cs, inv(left_shoulder_cs))
+    y_p = np.matmul(y, inv(left_shoulder_cs))
+    trans_dict["LeftArm"] = vector_to_angle_axis(y_p)
+    left_arm_rotation = angle_axis_to_matrix(trans_dict["LeftArm"])
+    left_arm_cs = np.matmul(left_arm_rotation.T, left_shoulder_cs)
 
-    # leftForeArm
+    # left fore Arm CS also have 2 DoF
     y = normalize(landmark_list[15] - landmark_list[13])
-    # z does not change here
-    x = np.cross(y, z)
-    left_fore_arm_cs = np.asarray([x, y, z])
-    left_fore_arm_rotation = np.matmul(left_fore_arm_cs, inv(left_arm_cs))
+    y_p = np.matmul(y, inv(left_arm_cs))
+    trans_dict["LeftForeArm"] = vector_to_angle_axis(y_p)
+    left_fore_arm_rotation = angle_axis_to_matrix(trans_dict["LeftForeArm"])
+    left_fore_arm_cs = np.matmul(left_fore_arm_rotation.T, left_arm_cs)
 
-    trans_dict["LeftArm"] = to_angle_axis(left_arm_rotation)
-    trans_dict["LeftForeArm"] = to_angle_axis(left_fore_arm_rotation)
     # Right shoulder
     right_shoulder_rotation = np.asarray([[0, 0, 1],
                                           [-1, 0, 0],
@@ -102,22 +112,21 @@ def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
     right_shoulder_cs = np.matmul(right_shoulder_rotation, spine_cs)
 
     # Right arm
-    # right_arm_cs = rightArmRotation * rightShouldCS
+    # Right arm has 2 DoF, rotation according to x and z. It cannot rotate according to Y
+    # rightArmCS = rightArmRotation * rightShouldCS
+    # y in the shoulder CS
     y = normalize(landmark_list[14] - landmark_list[12])
-    z = normalize(np.cross(landmark_list[16] - landmark_list[14], y))
-    x = np.cross(y, z)
-    right_arm_cs = np.asarray([x, y, z])
-    right_arm_rotation = np.matmul(right_arm_cs, inv(right_shoulder_cs))
+    y_p = np.matmul(y, inv(right_shoulder_cs))
+    trans_dict["RightArm"] = vector_to_angle_axis(y_p)
+    right_arm_rotation = angle_axis_to_matrix(trans_dict["RightArm"])
+    right_arm_cs = np.matmul(right_arm_rotation.T, right_shoulder_cs)
 
-    # rightForeArm
+    # right fore Arm CS also have 2 DoF
     y = normalize(landmark_list[16] - landmark_list[14])
-    # z does not change here
-    x = np.cross(y, z)
-    right_fore_arm_cs = np.asarray([x, y, z])
-    right_fore_arm_rotation = np.matmul(right_fore_arm_cs, inv(right_arm_cs))
-
-    trans_dict["RightArm"] = to_angle_axis(right_arm_rotation)
-    trans_dict["RightForeArm"] = to_angle_axis(right_fore_arm_rotation)
+    y_p = np.matmul(y, inv(right_arm_cs))
+    trans_dict["RightForeArm"] = vector_to_angle_axis(y_p)
+    right_fore_arm_rotation = angle_axis_to_matrix(trans_dict["RightForeArm"])
+    right_fore_arm_cs = np.matmul(right_fore_arm_rotation.T, right_arm_cs)
 
     if visibility[25] > .5 and visibility[26] > .5:
         # Left up leg
