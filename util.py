@@ -24,8 +24,8 @@ def angle_between(v1, v2):
     return np.degrees(np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)))
 
 
-def to_angle_axis(rotationM):
-    q = Quaternion(matrix=rotationM.transpose())
+def to_angle_axis(rotation_m):
+    q = Quaternion(matrix=rotation_m.transpose())
     axis = q.axis
     return [q.degrees, axis[0], axis[1], axis[2]]
 
@@ -47,352 +47,359 @@ def vector_to_angle_axis(v):
 
 
 def to_trans_dict(pose_landmark, left_hand_landmarks, right_hand_landmarks):
+    """
+    An IK module to transform the pose landmarks to kinematic transformations
+    :param pose_landmark: 33 pose landmarks from Mediapipe
+    :param left_hand_landmarks: 21 hand landmarks from Mediapipe
+    :param right_hand_landmarks: 21 hand landmarks from Mediapipe
+    :return: the transformation dictionary used in the AR application
+    """
     global LEG_LENGTH
-    visibility = np.asarray([l.visibility for l in pose_landmark])
-    landmarkList = np.asarray([[l.x, -l.y, -l.z] for l in pose_landmark])
-    transDict = {}
+    visibility = np.asarray([lmk.visibility for lmk in pose_landmark])
+    landmark_list = np.asarray([[lmk.x, -lmk.y, -lmk.z] for lmk in pose_landmark])
+    trans_dict = {}
     # Spine CS
-    orig = ((landmarkList[11] + landmarkList[12]) / 2.)
-    x = normalize(landmarkList[11] - landmarkList[12])
+    # orig = ((landmark_list[11] + landmark_list[12]) / 2.)
+    x = normalize(landmark_list[11] - landmark_list[12])
 
-    up = (landmarkList[11] + landmarkList[12]) / 2. - (landmarkList[23] + landmarkList[24]) / 2.
+    up = (landmark_list[11] + landmark_list[12]) / 2. - (landmark_list[23] + landmark_list[24]) / 2.
     up = normalize(up)
 
     z = normalize(np.cross(x, up))
     y = np.cross(z, x)
 
     # spineCS = np.append(np.transpose(np.asarray([x, y, z, orig])), [[0,0,0,1]], axis=0)
-    spineCS = np.asarray([x, y, z])
-    spineRotation = spineCS
+    spine_cs = np.asarray([x, y, z])
+    spine_rotation = spine_cs
 
     # Left shoulder
-    leftShoulderRotation = np.asarray([[0, 0, -1],
-                                       [1, 0, 0],
-                                       [0, -1, 0]])
-    leftShoulderCS = np.matmul(leftShoulderRotation, spineCS)
+    left_shoulder_rotation = np.asarray([[0, 0, -1],
+                                         [1, 0, 0],
+                                         [0, -1, 0]])
+    left_shoulder_cs = np.matmul(left_shoulder_rotation, spine_cs)
 
     # Left arm
     # leftArmCS = leftArmRotation * leftShouldCS
-    y = normalize(landmarkList[13] - landmarkList[11])
-    z = normalize(np.cross(y, landmarkList[15] - landmarkList[13]))
+    y = normalize(landmark_list[13] - landmark_list[11])
+    z = normalize(np.cross(y, landmark_list[15] - landmark_list[13]))
     x = np.cross(y, z)
-    leftArmCS = np.asarray([x, y, z])
-    leftArmRotation = np.matmul(leftArmCS, inv(leftShoulderCS))
+    left_arm_cs = np.asarray([x, y, z])
+    left_arm_rotation = np.matmul(left_arm_cs, inv(left_shoulder_cs))
 
     # leftForeArm
-    y = normalize(landmarkList[15] - landmarkList[13])
+    y = normalize(landmark_list[15] - landmark_list[13])
     # z does not change here
     x = np.cross(y, z)
-    leftForeArmCS = np.asarray([x, y, z])
-    leftForeArmRotation = np.matmul(leftForeArmCS, inv(leftArmCS))
+    left_fore_arm_cs = np.asarray([x, y, z])
+    left_fore_arm_rotation = np.matmul(left_fore_arm_cs, inv(left_arm_cs))
 
-    transDict["LeftArm"] = to_angle_axis(leftArmRotation)
-    transDict["LeftForeArm"] = to_angle_axis(leftForeArmRotation)
+    trans_dict["LeftArm"] = to_angle_axis(left_arm_rotation)
+    trans_dict["LeftForeArm"] = to_angle_axis(left_fore_arm_rotation)
     # Right shoulder
-    rightShoulderRotation = np.asarray([[0, 0, 1],
-                                        [-1, 0, 0],
-                                        [0, -1, 0]])
-    rightShoulderCS = np.matmul(rightShoulderRotation, spineCS)
+    right_shoulder_rotation = np.asarray([[0, 0, 1],
+                                          [-1, 0, 0],
+                                          [0, -1, 0]])
+    right_shoulder_cs = np.matmul(right_shoulder_rotation, spine_cs)
 
     # Right arm
-    # rightArmCS = rightArmRotation * rightShouldCS
-    y = normalize(landmarkList[14] - landmarkList[12])
-    z = normalize(np.cross(landmarkList[16] - landmarkList[14], y))
+    # right_arm_cs = rightArmRotation * rightShouldCS
+    y = normalize(landmark_list[14] - landmark_list[12])
+    z = normalize(np.cross(landmark_list[16] - landmark_list[14], y))
     x = np.cross(y, z)
-    rightArmCS = np.asarray([x, y, z])
-    rightArmRotation = np.matmul(rightArmCS, inv(rightShoulderCS))
+    right_arm_cs = np.asarray([x, y, z])
+    right_arm_rotation = np.matmul(right_arm_cs, inv(right_shoulder_cs))
 
     # rightForeArm
-    y = normalize(landmarkList[16] - landmarkList[14])
+    y = normalize(landmark_list[16] - landmark_list[14])
     # z does not change here
     x = np.cross(y, z)
-    rightForeArmCS = np.asarray([x, y, z])
-    rightForeArmRotation = np.matmul(rightForeArmCS, inv(rightArmCS))
+    right_fore_arm_cs = np.asarray([x, y, z])
+    right_fore_arm_rotation = np.matmul(right_fore_arm_cs, inv(right_arm_cs))
 
-    transDict["RightArm"] = to_angle_axis(rightArmRotation)
-    transDict["RightForeArm"] = to_angle_axis(rightForeArmRotation)
+    trans_dict["RightArm"] = to_angle_axis(right_arm_rotation)
+    trans_dict["RightForeArm"] = to_angle_axis(right_fore_arm_rotation)
 
     if visibility[25] > .5 and visibility[26] > .5:
         # Left up leg
-        y = normalize(landmarkList[25] - landmarkList[23])
-        x = normalize(np.cross(landmarkList[27] - landmarkList[25], y))
+        y = normalize(landmark_list[25] - landmark_list[23])
+        x = normalize(np.cross(landmark_list[27] - landmark_list[25], y))
         z = np.cross(x, y)
-        leftUpLegCS = np.asarray([x, y, z])
-        leftUpLegRotation = np.matmul(leftUpLegCS, inv(spineCS))
+        left_up_leg_cs = np.asarray([x, y, z])
+        left_up_leg_rotation = np.matmul(left_up_leg_cs, inv(spine_cs))
 
         # Left leg
-        y = normalize(landmarkList[27] - landmarkList[25])
+        y = normalize(landmark_list[27] - landmark_list[25])
         # x does not change here
         z = np.cross(x, y)
-        leftLegCS = np.asarray([x, y, z])
-        leftLegRotation = np.matmul(leftLegCS, inv(leftUpLegCS))
+        left_leg_cs = np.asarray([x, y, z])
+        left_leg_rotation = np.matmul(left_leg_cs, inv(left_up_leg_cs))
 
-        transDict["LeftUpLeg"] = to_angle_axis(leftUpLegRotation)
-        transDict["LeftLeg"] = to_angle_axis(leftLegRotation)
+        trans_dict["LeftUpLeg"] = to_angle_axis(left_up_leg_rotation)
+        trans_dict["LeftLeg"] = to_angle_axis(left_leg_rotation)
 
         # Right up leg
-        y = normalize(landmarkList[26] - landmarkList[24])
-        x = normalize(np.cross(landmarkList[28] - landmarkList[26], y))
+        y = normalize(landmark_list[26] - landmark_list[24])
+        x = normalize(np.cross(landmark_list[28] - landmark_list[26], y))
         z = np.cross(x, y)
-        rightUpLegCS = np.asarray([x, y, z])
-        rightUpLegRotation = np.matmul(rightUpLegCS, inv(spineCS))
+        right_up_leg_cs = np.asarray([x, y, z])
+        right_up_leg_rotation = np.matmul(right_up_leg_cs, inv(spine_cs))
 
         # right leg
-        y = normalize(landmarkList[28] - landmarkList[26])
+        y = normalize(landmark_list[28] - landmark_list[26])
         # x does not change here
         z = np.cross(x, y)
-        rightLegCS = np.asarray([x, y, z])
-        rightLegRotation = np.matmul(rightLegCS, inv(rightUpLegCS))
+        right_leg_cs = np.asarray([x, y, z])
+        right_leg_rotation = np.matmul(right_leg_cs, inv(right_up_leg_cs))
 
-        transDict["RightUpLeg"] = to_angle_axis(rightUpLegRotation)
-        transDict["RightLeg"] = to_angle_axis(rightLegRotation)
+        trans_dict["RightUpLeg"] = to_angle_axis(right_up_leg_rotation)
+        trans_dict["RightLeg"] = to_angle_axis(right_leg_rotation)
 
         # Distance to the ground
         # Translation (ratio) = (hip_point - lower_point)/ (2. * up_leg_length)
         if LEG_LENGTH == 0:
-            LEG_LENGTH = 2. * np.linalg.norm(landmarkList[26] - landmarkList[24])
+            LEG_LENGTH = 2. * np.linalg.norm(landmark_list[26] - landmark_list[24])
 
-        translation = ((landmarkList[23] + landmarkList[24]) / 2)[1] - np.min(landmarkList[:, 1]) / LEG_LENGTH
+        translation = ((landmark_list[23] + landmark_list[24]) / 2)[1] - np.min(landmark_list[:, 1]) / LEG_LENGTH
 
-        transDict["Hips"] = to_angle_axis(spineRotation)
-        transDict["HipsTrans"] = [translation, 0, 0, 0]
+        trans_dict["Hips"] = to_angle_axis(spine_rotation)
+        trans_dict["HipsTrans"] = [translation, 0, 0, 0]
     else:
-        transDict["Spine1"] = to_angle_axis(spineRotation)
+        trans_dict["Spine1"] = to_angle_axis(spine_rotation)
 
     # left hand
     if visibility[19] > 0.5:
-        handMiddle = (landmarkList[17] + landmarkList[19]) / 2.
-        y = normalize(handMiddle - landmarkList[15])
-        z = normalize(np.cross(landmarkList[17] - landmarkList[15], landmarkList[19] - landmarkList[15]))
+        hand_middle = (landmark_list[17] + landmark_list[19]) / 2.
+        y = normalize(hand_middle - landmark_list[15])
+        z = normalize(np.cross(landmark_list[17] - landmark_list[15], landmark_list[19] - landmark_list[15]))
         x = np.cross(y, z)
-        leftHandCS = np.asarray([x, y, z])
-        leftHandRotation = np.matmul(leftHandCS, inv(leftForeArmCS))
-        transDict["LeftHand"] = to_angle_axis(leftHandRotation)
+        left_hand_cs = np.asarray([x, y, z])
+        left_hand_rotation = np.matmul(left_hand_cs, inv(left_fore_arm_cs))
+        trans_dict["LeftHand"] = to_angle_axis(left_hand_rotation)
 
     # right hand
     if visibility[20] > 0.5:
-        handMiddle = (landmarkList[18] + landmarkList[20]) / 2.
-        y = normalize(handMiddle - landmarkList[16])
-        z = normalize(np.cross(landmarkList[20] - landmarkList[16], landmarkList[18] - landmarkList[16]))
+        hand_middle = (landmark_list[18] + landmark_list[20]) / 2.
+        y = normalize(hand_middle - landmark_list[16])
+        z = normalize(np.cross(landmark_list[20] - landmark_list[16], landmark_list[18] - landmark_list[16]))
         x = np.cross(y, z)
-        rightHandCS = np.asarray([x, y, z])
-        rightHandRotation = np.matmul(rightHandCS, inv(rightForeArmCS))
-        transDict["RightHand"] = to_angle_axis(rightHandRotation)
+        right_hand_cs = np.asarray([x, y, z])
+        right_hand_rotation = np.matmul(right_hand_cs, inv(right_fore_arm_cs))
+        trans_dict["RightHand"] = to_angle_axis(right_hand_rotation)
 
     # head
     if visibility[0] > 0.5:
-        neck = middle(landmarkList[11], landmarkList[12])
-        y = normalize(middle(landmarkList[7], landmarkList[8]) - neck)
-        z = normalize(np.cross(landmarkList[7] - neck, landmarkList[8] - neck))
+        neck = middle(landmark_list[11], landmark_list[12])
+        y = normalize(middle(landmark_list[7], landmark_list[8]) - neck)
+        z = normalize(np.cross(landmark_list[7] - neck, landmark_list[8] - neck))
         x = np.cross(y, z)
-        headCS = np.asarray([x, y, z])
-        headRotation = np.matmul(headCS, inv(spineCS))
-        transDict["Head"] = to_angle_axis(headRotation)
+        head_cs = np.asarray([x, y, z])
+        head_rotation = np.matmul(head_cs, inv(spine_cs))
+        trans_dict["Head"] = to_angle_axis(head_rotation)
 
     # If the hand landmarks are given, we optimize the gestures with the hand landmarks
     # Left hand
     if left_hand_landmarks:
-        leftHandVisibility = np.asarray([l.visibility for l in left_hand_landmarks.landmark])
-        leftHandLandmarkList = np.asarray([[l.x, -l.y, -l.z] for l in left_hand_landmarks.landmark])
-        handMiddle = (leftHandLandmarkList[5] + leftHandLandmarkList[17]) / 2.
-        y = normalize(handMiddle - leftHandLandmarkList[0])
-        z = normalize(np.cross(leftHandLandmarkList[17] - leftHandLandmarkList[0],
-                               leftHandLandmarkList[5] - leftHandLandmarkList[0]))
+        # left_hand_visibility = np.asarray([l.visibility for l in left_hand_landmarks.landmark])
+        left_hand_landmark_list = np.asarray([[lmk.x, -lmk.y, -lmk.z] for lmk in left_hand_landmarks.landmark])
+        hand_middle = (left_hand_landmark_list[5] + left_hand_landmark_list[17]) / 2.
+        y = normalize(hand_middle - left_hand_landmark_list[0])
+        z = normalize(np.cross(left_hand_landmark_list[17] - left_hand_landmark_list[0],
+                               left_hand_landmark_list[5] - left_hand_landmark_list[0]))
         x = np.cross(y, z)
-        leftHandCS = np.asarray([x, y, z])
-        leftHandRotation = np.matmul(leftHandCS, inv(leftForeArmCS))
-        transDict["LeftHand"] = to_angle_axis(leftHandRotation)
+        left_hand_cs = np.asarray([x, y, z])
+        left_hand_rotation = np.matmul(left_hand_cs, inv(left_fore_arm_cs))
+        trans_dict["LeftHand"] = to_angle_axis(left_hand_rotation)
 
         # Left hand fingers
         # Index1
-        y = normalize(leftHandLandmarkList[6] - leftHandLandmarkList[5])
-        yP = np.matmul(y, inv(leftHandCS))
-        transDict["LeftHandIndex1"] = vector_to_angle_axis(yP)
+        y = normalize(left_hand_landmark_list[6] - left_hand_landmark_list[5])
+        y_p = np.matmul(y, inv(left_hand_cs))
+        trans_dict["LeftHandIndex1"] = vector_to_angle_axis(y_p)
         # Index2. Since the knuckles only rotate according to the x axis, we use the angle between function.
-        angle = angle_between(leftHandLandmarkList[7] - leftHandLandmarkList[6],
-                              leftHandLandmarkList[6] - leftHandLandmarkList[5])
-        transDict["LeftHandIndex2"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(left_hand_landmark_list[7] - left_hand_landmark_list[6],
+                              left_hand_landmark_list[6] - left_hand_landmark_list[5])
+        trans_dict["LeftHandIndex2"] = [angle, 1.0, 0.0, 0.0]
         # Index3
-        angle = angle_between(leftHandLandmarkList[8] - leftHandLandmarkList[7],
-                              leftHandLandmarkList[7] - leftHandLandmarkList[6])
-        transDict["LeftHandIndex3"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(left_hand_landmark_list[8] - left_hand_landmark_list[7],
+                              left_hand_landmark_list[7] - left_hand_landmark_list[6])
+        trans_dict["LeftHandIndex3"] = [angle, 1.0, 0.0, 0.0]
 
         # Middle1
-        y = normalize(leftHandLandmarkList[10] - leftHandLandmarkList[9])
-        yP = np.matmul(y, inv(leftHandCS))
-        transDict["LeftHandMiddle1"] = vector_to_angle_axis(yP)
+        y = normalize(left_hand_landmark_list[10] - left_hand_landmark_list[9])
+        y_p = np.matmul(y, inv(left_hand_cs))
+        trans_dict["LeftHandMiddle1"] = vector_to_angle_axis(y_p)
         # Middle2
-        angle = angle_between(leftHandLandmarkList[11] - leftHandLandmarkList[10],
-                              leftHandLandmarkList[10] - leftHandLandmarkList[9])
-        transDict["LeftHandMiddle2"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(left_hand_landmark_list[11] - left_hand_landmark_list[10],
+                              left_hand_landmark_list[10] - left_hand_landmark_list[9])
+        trans_dict["LeftHandMiddle2"] = [angle, 1.0, 0.0, 0.0]
         # Middle3
-        angle = angle_between(leftHandLandmarkList[12] - leftHandLandmarkList[11],
-                              leftHandLandmarkList[11] - leftHandLandmarkList[10])
-        transDict["LeftHandMiddle3"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(left_hand_landmark_list[12] - left_hand_landmark_list[11],
+                              left_hand_landmark_list[11] - left_hand_landmark_list[10])
+        trans_dict["LeftHandMiddle3"] = [angle, 1.0, 0.0, 0.0]
 
         # Ring1
-        y = normalize(leftHandLandmarkList[14] - leftHandLandmarkList[13])
-        yP = np.matmul(y, inv(leftHandCS))
-        transDict["LeftHandRing1"] = vector_to_angle_axis(yP)
+        y = normalize(left_hand_landmark_list[14] - left_hand_landmark_list[13])
+        y_p = np.matmul(y, inv(left_hand_cs))
+        trans_dict["LeftHandRing1"] = vector_to_angle_axis(y_p)
         # Ring2
-        angle = angle_between(leftHandLandmarkList[15] - leftHandLandmarkList[14],
-                              leftHandLandmarkList[14] - leftHandLandmarkList[13])
-        transDict["LeftHandRing2"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(left_hand_landmark_list[15] - left_hand_landmark_list[14],
+                              left_hand_landmark_list[14] - left_hand_landmark_list[13])
+        trans_dict["LeftHandRing2"] = [angle, 1.0, 0.0, 0.0]
         # Ring3
-        angle = angle_between(leftHandLandmarkList[16] - leftHandLandmarkList[15],
-                              leftHandLandmarkList[15] - leftHandLandmarkList[14])
-        transDict["LeftHandRing3"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(left_hand_landmark_list[16] - left_hand_landmark_list[15],
+                              left_hand_landmark_list[15] - left_hand_landmark_list[14])
+        trans_dict["LeftHandRing3"] = [angle, 1.0, 0.0, 0.0]
 
         # Pinky1
-        y = normalize(leftHandLandmarkList[18] - leftHandLandmarkList[17])
-        yP = np.matmul(y, inv(leftHandCS))
-        transDict["LeftHandPinky1"] = vector_to_angle_axis(yP)
+        y = normalize(left_hand_landmark_list[18] - left_hand_landmark_list[17])
+        y_p = np.matmul(y, inv(left_hand_cs))
+        trans_dict["LeftHandPinky1"] = vector_to_angle_axis(y_p)
         # Pinky2
-        angle = angle_between(leftHandLandmarkList[19] - leftHandLandmarkList[18],
-                              leftHandLandmarkList[18] - leftHandLandmarkList[17])
-        transDict["LeftHandPinky2"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(left_hand_landmark_list[19] - left_hand_landmark_list[18],
+                              left_hand_landmark_list[18] - left_hand_landmark_list[17])
+        trans_dict["LeftHandPinky2"] = [angle, 1.0, 0.0, 0.0]
         # Pinky3
-        angle = angle_between(leftHandLandmarkList[20] - leftHandLandmarkList[19],
-                              leftHandLandmarkList[19] - leftHandLandmarkList[18])
-        transDict["LeftHandPinky3"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(left_hand_landmark_list[20] - left_hand_landmark_list[19],
+                              left_hand_landmark_list[19] - left_hand_landmark_list[18])
+        trans_dict["LeftHandPinky3"] = [angle, 1.0, 0.0, 0.0]
 
         # Thumb1
-        y = normalize(leftHandLandmarkList[2] - leftHandLandmarkList[1])
-        yP = np.matmul(y, inv(leftHandCS))
-        transDict["LeftHandThumb1"] = vector_to_angle_axis(yP)
-        angle_axis = transDict["LeftHandThumb1"]
+        y = normalize(left_hand_landmark_list[2] - left_hand_landmark_list[1])
+        y_p = np.matmul(y, inv(left_hand_cs))
+        trans_dict["LeftHandThumb1"] = vector_to_angle_axis(y_p)
+        angle_axis = trans_dict["LeftHandThumb1"]
         r = Quaternion(axis=[angle_axis[1], angle_axis[2], angle_axis[3]], degrees=angle_axis[0])
-        leftThumb1CS = np.matmul(r.rotation_matrix.transpose(), leftHandCS)
+        left_thumb1_cs = np.matmul(r.rotation_matrix.transpose(), left_hand_cs)
         # Thumb2
-        angle = angle_between(leftHandLandmarkList[3] - leftHandLandmarkList[2],
-                              leftHandLandmarkList[2] - leftHandLandmarkList[1])
-        y = normalize(leftHandLandmarkList[3] - leftHandLandmarkList[2])
-        yP = np.matmul(y, inv(leftThumb1CS))
-        if yP[0] < 0:
-            transDict["LeftHandThumb2"] = [angle, 0.0, 0.0, 1.0]
+        angle = angle_between(left_hand_landmark_list[3] - left_hand_landmark_list[2],
+                              left_hand_landmark_list[2] - left_hand_landmark_list[1])
+        y = normalize(left_hand_landmark_list[3] - left_hand_landmark_list[2])
+        y_p = np.matmul(y, inv(left_thumb1_cs))
+        if y_p[0] < 0:
+            trans_dict["LeftHandThumb2"] = [angle, 0.0, 0.0, 1.0]
         else:
-            transDict["LeftHandThumb2"] = [-angle, 0.0, 0.0, 1.0]
-        angle_axis = transDict["LeftHandThumb2"]
+            trans_dict["LeftHandThumb2"] = [-angle, 0.0, 0.0, 1.0]
+        angle_axis = trans_dict["LeftHandThumb2"]
         r = Quaternion(axis=[angle_axis[1], angle_axis[2], angle_axis[3]], degrees=angle_axis[0])
-        leftThumb2CS = np.matmul(r.rotation_matrix.transpose(), leftThumb1CS)
+        left_thumb2_cs = np.matmul(r.rotation_matrix.transpose(), left_thumb1_cs)
         # Thumb3
-        angle = angle_between(leftHandLandmarkList[4] - leftHandLandmarkList[3],
-                              leftHandLandmarkList[3] - leftHandLandmarkList[2])
-        y = normalize(leftHandLandmarkList[4] - leftHandLandmarkList[3])
-        yP = np.matmul(y, inv(leftThumb2CS))
-        if yP[0] < 0:
-            transDict["LeftHandThumb3"] = [angle, 0.0, 0.0, 1.0]
+        angle = angle_between(left_hand_landmark_list[4] - left_hand_landmark_list[3],
+                              left_hand_landmark_list[3] - left_hand_landmark_list[2])
+        y = normalize(left_hand_landmark_list[4] - left_hand_landmark_list[3])
+        y_p = np.matmul(y, inv(left_thumb2_cs))
+        if y_p[0] < 0:
+            trans_dict["LeftHandThumb3"] = [angle, 0.0, 0.0, 1.0]
         else:
-            transDict["LeftHandThumb3"] = [-angle, 0.0, 0.0, 1.0]
+            trans_dict["LeftHandThumb3"] = [-angle, 0.0, 0.0, 1.0]
 
         # # Thumb1
-        # y = normalize(leftHandLandmarkList[2] - leftHandLandmarkList[1])
-        # yP = np.matmul(y, inv(leftHandCS))
+        # y = normalize(left_hand_landmark_list[2] - left_hand_landmark_list[1])
+        # yP = np.matmul(y, inv(left_hand_cs))
         # transDict["LeftHandThumb1"] = vector_to_angle_axis(yP)
         # # Thumb2
-        # angle = angle_between(leftHandLandmarkList[3] - leftHandLandmarkList[2],
-        #                       leftHandLandmarkList[2] - leftHandLandmarkList[1])
+        # angle = angle_between(left_hand_landmark_list[3] - left_hand_landmark_list[2],
+        #                       left_hand_landmark_list[2] - left_hand_landmark_list[1])
         # transDict["LeftHandThumb2"] = [angle, 0.0, 0.0, -1.0]
         # # Thumb3
-        # angle = angle_between(leftHandLandmarkList[4] - leftHandLandmarkList[3],
-        #                       leftHandLandmarkList[3] - leftHandLandmarkList[2])
+        # angle = angle_between(left_hand_landmark_list[4] - left_hand_landmark_list[3],
+        #                       left_hand_landmark_list[3] - left_hand_landmark_list[2])
         # transDict["LeftHandThumb3"] = [angle, 0.0, 0.0, -1.0]
 
     # Right hand
     if right_hand_landmarks:
-        rightHandVisibility = np.asarray([l.visibility for l in right_hand_landmarks.landmark])
-        rightHandLandmarkList = np.asarray([[l.x, -l.y, -l.z] for l in right_hand_landmarks.landmark])
-        handMiddle = (rightHandLandmarkList[5] + rightHandLandmarkList[17]) / 2.
-        y = normalize(handMiddle - rightHandLandmarkList[0])
-        z = normalize(np.cross(rightHandLandmarkList[5] - rightHandLandmarkList[0],
-                               rightHandLandmarkList[17] - rightHandLandmarkList[0]))
+        # right_hand_visibility = np.asarray([lmk.visibility for lmk in right_hand_landmarks.landmark])
+        right_hand_landmark_list = np.asarray([[lmk.x, -lmk.y, -lmk.z] for lmk in right_hand_landmarks.landmark])
+        hand_middle = (right_hand_landmark_list[5] + right_hand_landmark_list[17]) / 2.
+        y = normalize(hand_middle - right_hand_landmark_list[0])
+        z = normalize(np.cross(right_hand_landmark_list[5] - right_hand_landmark_list[0],
+                               right_hand_landmark_list[17] - right_hand_landmark_list[0]))
         x = np.cross(y, z)
-        rightHandCS = np.asarray([x, y, z])
-        rightHandRotation = np.matmul(rightHandCS, inv(rightForeArmCS))
-        transDict["RightHand"] = to_angle_axis(rightHandRotation)
+        right_hand_cs = np.asarray([x, y, z])
+        right_hand_rotation = np.matmul(right_hand_cs, inv(right_fore_arm_cs))
+        trans_dict["RightHand"] = to_angle_axis(right_hand_rotation)
 
         # Right hand fingers
         # Index1
-        y = normalize(rightHandLandmarkList[6] - rightHandLandmarkList[5])
-        yP = np.matmul(y, inv(rightHandCS))
-        transDict["RightHandIndex1"] = vector_to_angle_axis(yP)
+        y = normalize(right_hand_landmark_list[6] - right_hand_landmark_list[5])
+        y_p = np.matmul(y, inv(right_hand_cs))
+        trans_dict["RightHandIndex1"] = vector_to_angle_axis(y_p)
         # Index2. Since the knuckles only rotate according to the x axis, we use the angle between function.
-        angle = angle_between(rightHandLandmarkList[7] - rightHandLandmarkList[6],
-                              rightHandLandmarkList[6] - rightHandLandmarkList[5])
-        transDict["RightHandIndex2"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(right_hand_landmark_list[7] - right_hand_landmark_list[6],
+                              right_hand_landmark_list[6] - right_hand_landmark_list[5])
+        trans_dict["RightHandIndex2"] = [angle, 1.0, 0.0, 0.0]
         # Index3
-        angle = angle_between(rightHandLandmarkList[8] - rightHandLandmarkList[7],
-                              rightHandLandmarkList[7] - rightHandLandmarkList[6])
-        transDict["RightHandIndex3"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(right_hand_landmark_list[8] - right_hand_landmark_list[7],
+                              right_hand_landmark_list[7] - right_hand_landmark_list[6])
+        trans_dict["RightHandIndex3"] = [angle, 1.0, 0.0, 0.0]
 
         # Middle1
-        y = normalize(rightHandLandmarkList[10] - rightHandLandmarkList[9])
-        yP = np.matmul(y, inv(rightHandCS))
-        transDict["RightHandMiddle1"] = vector_to_angle_axis(yP)
+        y = normalize(right_hand_landmark_list[10] - right_hand_landmark_list[9])
+        y_p = np.matmul(y, inv(right_hand_cs))
+        trans_dict["RightHandMiddle1"] = vector_to_angle_axis(y_p)
         # Middle2
-        angle = angle_between(rightHandLandmarkList[11] - rightHandLandmarkList[10],
-                              rightHandLandmarkList[10] - rightHandLandmarkList[9])
-        transDict["RightHandMiddle2"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(right_hand_landmark_list[11] - right_hand_landmark_list[10],
+                              right_hand_landmark_list[10] - right_hand_landmark_list[9])
+        trans_dict["RightHandMiddle2"] = [angle, 1.0, 0.0, 0.0]
         # Middle3
-        angle = angle_between(rightHandLandmarkList[12] - rightHandLandmarkList[11],
-                              rightHandLandmarkList[11] - rightHandLandmarkList[10])
-        transDict["RightHandMiddle3"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(right_hand_landmark_list[12] - right_hand_landmark_list[11],
+                              right_hand_landmark_list[11] - right_hand_landmark_list[10])
+        trans_dict["RightHandMiddle3"] = [angle, 1.0, 0.0, 0.0]
 
         # Ring1
-        y = normalize(rightHandLandmarkList[14] - rightHandLandmarkList[13])
-        yP = np.matmul(y, inv(rightHandCS))
-        transDict["RightHandRing1"] = vector_to_angle_axis(yP)
+        y = normalize(right_hand_landmark_list[14] - right_hand_landmark_list[13])
+        y_p = np.matmul(y, inv(right_hand_cs))
+        trans_dict["RightHandRing1"] = vector_to_angle_axis(y_p)
         # Ring2
-        angle = angle_between(rightHandLandmarkList[15] - rightHandLandmarkList[14],
-                              rightHandLandmarkList[14] - rightHandLandmarkList[13])
-        transDict["RightHandRing2"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(right_hand_landmark_list[15] - right_hand_landmark_list[14],
+                              right_hand_landmark_list[14] - right_hand_landmark_list[13])
+        trans_dict["RightHandRing2"] = [angle, 1.0, 0.0, 0.0]
         # Ring3
-        angle = angle_between(rightHandLandmarkList[16] - rightHandLandmarkList[15],
-                              rightHandLandmarkList[15] - rightHandLandmarkList[14])
-        transDict["RightHandRing3"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(right_hand_landmark_list[16] - right_hand_landmark_list[15],
+                              right_hand_landmark_list[15] - right_hand_landmark_list[14])
+        trans_dict["RightHandRing3"] = [angle, 1.0, 0.0, 0.0]
 
         # Pinky1
-        y = normalize(rightHandLandmarkList[18] - rightHandLandmarkList[17])
-        yP = np.matmul(y, inv(rightHandCS))
-        transDict["RightHandPinky1"] = vector_to_angle_axis(yP)
+        y = normalize(right_hand_landmark_list[18] - right_hand_landmark_list[17])
+        y_p = np.matmul(y, inv(right_hand_cs))
+        trans_dict["RightHandPinky1"] = vector_to_angle_axis(y_p)
         # Pinky2
-        angle = angle_between(rightHandLandmarkList[19] - rightHandLandmarkList[18],
-                              rightHandLandmarkList[18] - rightHandLandmarkList[17])
-        transDict["RightHandPinky2"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(right_hand_landmark_list[19] - right_hand_landmark_list[18],
+                              right_hand_landmark_list[18] - right_hand_landmark_list[17])
+        trans_dict["RightHandPinky2"] = [angle, 1.0, 0.0, 0.0]
         # Pinky3
-        angle = angle_between(rightHandLandmarkList[20] - rightHandLandmarkList[19],
-                              rightHandLandmarkList[19] - rightHandLandmarkList[18])
-        transDict["RightHandPinky3"] = [angle, 1.0, 0.0, 0.0]
+        angle = angle_between(right_hand_landmark_list[20] - right_hand_landmark_list[19],
+                              right_hand_landmark_list[19] - right_hand_landmark_list[18])
+        trans_dict["RightHandPinky3"] = [angle, 1.0, 0.0, 0.0]
 
         # Thumb1
-        y = normalize(rightHandLandmarkList[2] - rightHandLandmarkList[1])
-        yP = np.matmul(y, inv(rightHandCS))
-        transDict["RightHandThumb1"] = vector_to_angle_axis(yP)
-        angle_axis = transDict["RightHandThumb1"]
+        y = normalize(right_hand_landmark_list[2] - right_hand_landmark_list[1])
+        y_p = np.matmul(y, inv(right_hand_cs))
+        trans_dict["RightHandThumb1"] = vector_to_angle_axis(y_p)
+        angle_axis = trans_dict["RightHandThumb1"]
         r = Quaternion(axis=[angle_axis[1], angle_axis[2], angle_axis[3]], degrees=angle_axis[0])
-        rightThumb1CS = np.matmul(r.rotation_matrix.transpose(), rightHandCS)
+        right_thumb1_cs = np.matmul(r.rotation_matrix.transpose(), right_hand_cs)
         # Thumb2
-        angle = angle_between(rightHandLandmarkList[3] - rightHandLandmarkList[2],
-                              rightHandLandmarkList[2] - rightHandLandmarkList[1])
-        y = normalize(rightHandLandmarkList[3] - rightHandLandmarkList[2])
-        yP = np.matmul(y, inv(rightThumb1CS))
-        if yP[0] < 0:
-            transDict["RightHandThumb2"] = [angle, 0.0, 0.0, 1.0]
+        angle = angle_between(right_hand_landmark_list[3] - right_hand_landmark_list[2],
+                              right_hand_landmark_list[2] - right_hand_landmark_list[1])
+        y = normalize(right_hand_landmark_list[3] - right_hand_landmark_list[2])
+        y_p = np.matmul(y, inv(right_thumb1_cs))
+        if y_p[0] < 0:
+            trans_dict["RightHandThumb2"] = [angle, 0.0, 0.0, 1.0]
         else:
-            transDict["RightHandThumb2"] = [-angle, 0.0, 0.0, 1.0]
-        angle_axis = transDict["RightHandThumb2"]
+            trans_dict["RightHandThumb2"] = [-angle, 0.0, 0.0, 1.0]
+        angle_axis = trans_dict["RightHandThumb2"]
         r = Quaternion(axis=[angle_axis[1], angle_axis[2], angle_axis[3]], degrees=angle_axis[0])
-        rightThumb2CS = np.matmul(r.rotation_matrix.transpose(), rightThumb1CS)
+        right_thumb2_cs = np.matmul(r.rotation_matrix.transpose(), right_thumb1_cs)
         # Thumb3
-        angle = angle_between(rightHandLandmarkList[4] - rightHandLandmarkList[3],
-                              rightHandLandmarkList[3] - rightHandLandmarkList[2])
-        y = normalize(rightHandLandmarkList[4] - rightHandLandmarkList[3])
-        yP = np.matmul(y, inv(rightThumb2CS))
-        if yP[0] < 0:
-            transDict["RightHandThumb3"] = [angle, 0.0, 0.0, 1.0]
+        angle = angle_between(right_hand_landmark_list[4] - right_hand_landmark_list[3],
+                              right_hand_landmark_list[3] - right_hand_landmark_list[2])
+        y = normalize(right_hand_landmark_list[4] - right_hand_landmark_list[3])
+        y_p = np.matmul(y, inv(right_thumb2_cs))
+        if y_p[0] < 0:
+            trans_dict["RightHandThumb3"] = [angle, 0.0, 0.0, 1.0]
         else:
-            transDict["RightHandThumb3"] = [-angle, 0.0, 0.0, 1.0]
-    return transDict
+            trans_dict["RightHandThumb3"] = [-angle, 0.0, 0.0, 1.0]
+    return trans_dict
 
 
 def angle_axis_to_string(angle_axis):
